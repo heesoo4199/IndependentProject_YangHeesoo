@@ -1,0 +1,19 @@
+﻿@using WebService.Models;
+@model Person
+
+@{
+    ViewBag.Title = "DoSomething";
+}
+
+<h2>DoSomething</h2>
+
+<form action="@Url.Action("DoSomethingElse", "Example")" method="post">
+    First name:<br>
+    @Html.EditorFor(person => person.FirstName)<br>
+    Last name:<br>
+    @Html.EditorFor(person => person.LastName)<br><br>
+    <input type="submit" value="Submit">
+</form>
+
+<a href="@Url.Action("ClearAction", "Example")">Clear</a>
+
