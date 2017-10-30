@@ -1,17 +1,41 @@
-#include <Wire.h>
+#include <PID_v1.h>
 
+#include <Wire.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+// MPU-6050 constants
 float rotX, rotY, rotZ;
 float accX, accY, accZ;
 float angleX, angleY, angleZ;
 
+// nRF24L01 constants
+RF24 radio(7, 8);
+const byte radio_address[6] = "00001";
+
+// PID controller constants
+double setpoint, input, output;
+double kP = 1, kI = 1, kD = 1;
+PID PIDController(input, output, setpoint, kP, kI, kD, DIRECT);
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  // nRF24L01 setup
+  radio.begin();
+  radio.openReadingPipe(0, address);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.startListening();
+  // MPU-6050 setup
   Wire.begin();
   mpuInit(); // Initializes the MPU
   angleX = 0;
   angleY = 0;
   angleZ = 0;
+  // PID setup
+  // Input = sensor, so gyro/accel reading
+  PIDController.SetMode(AUTOMATIC);
 }
 
 void loop() {
@@ -21,6 +45,9 @@ void loop() {
   angleY += rotY;
   angleZ += rotZ;
   Serial.print(angleX);
+  if (radio.available()) {
+    // Do radio requests/processing here
+  }
   delay(100);
 }
 
