@@ -1,18 +1,20 @@
-#include <PID_v1.h>
-
 #include <Wire.h>
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <PID_v1.h>
+
+// Drone coordinate system
+float x, y, z; // x, y, z (meters)
+float roll, pitch, yaw; // roll & pitch = 0 if parallel to ground. yaw = 0 at start (deg)
 
 // MPU-6050 constants
-float rotX, rotY, rotZ;
-float accX, accY, accZ;
-float angleX, angleY, angleZ;
+float rotX, rotY, rotZ; // Angular velocity (deg/s)
+float accX, accY, accZ; // Acceleration (g)
 
 // nRF24L01 constants
-RF24 radio(7, 8);
-const byte radio_address[6] = "00001";
+RF24 radio(7, 8); // Radio connection pins 7 & 8
+const byte radio_address[6] = "00001"; // Must match with transmitter
 
 // PID controller constants
 double setpoint, input, output;
@@ -20,7 +22,6 @@ double kP = 1, kI = 1, kD = 1;
 PID PIDController(input, output, setpoint, kP, kI, kD, DIRECT);
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
   // nRF24L01 setup
   radio.begin();
@@ -30,25 +31,27 @@ void setup() {
   // MPU-6050 setup
   Wire.begin();
   mpuInit(); // Initializes the MPU
-  angleX = 0;
-  angleY = 0;
-  angleZ = 0;
   // PID setup
   // Input = sensor, so gyro/accel reading
   PIDController.SetMode(AUTOMATIC);
+
+  // Coordinates initialization
+  x = 0;
+  y = 0;
+  z = 0;
+  yaw = 0;
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Read and update gyroscope and accelerometer values
   gyroRead();
-  angleX += rotX;
-  angleY += rotY;
-  angleZ += rotZ;
-  Serial.print(angleX);
+  accelRead();
+  // Radio receiver processing
   if (radio.available()) {
-    // Do radio requests/processing here
+    
   }
-  delay(100);
+  // Set control loop frequency to 100 Hz
+  delay(10);
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
@@ -95,6 +98,9 @@ void accelRead() {
     accY = (Wire.read()<<8|Wire.read()) / 16384.0;
     accZ = (Wire.read()<<8|Wire.read()) / 16384.0;
   }
+}
+
+void gyroCalibrate() {
   
 }
 
