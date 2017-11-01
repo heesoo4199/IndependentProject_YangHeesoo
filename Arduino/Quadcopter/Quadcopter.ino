@@ -86,7 +86,7 @@ void gyroRead() {
     rotZ = (Wire.read()<<8|Wire.read()) / 131.0;
   }
 }
-
+// com
 // Sets accX, accY, and accZ to respective accelerometer values (in Gs)
 void accelRead() {
   Wire.beginTransmission(0b11010000);
