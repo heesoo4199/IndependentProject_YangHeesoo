@@ -4,6 +4,9 @@
 #include <RF24.h>
 #include <PID_v1.h>
 
+// Arduino variables
+long timer; // tracks time in microseconds.
+
 // Drone coordinate system
 float x, y, z; // x, y, z (meters)
 float roll, pitch, yaw; // roll & pitch = 0 if parallel to ground. yaw = 0 at start (deg)
@@ -40,9 +43,13 @@ void setup() {
   y = 0;
   z = 0;
   yaw = 0;
+
+  // Set up control timer
+  timer = micros();
 }
 
 void loop() {
+  timer = micros();
   // Read and update gyroscope and accelerometer values
   gyroRead();
   accelRead();
@@ -50,8 +57,6 @@ void loop() {
   if (radio.available()) {
     
   }
-  // Set control loop frequency to 100 Hz
-  delay(10);
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
