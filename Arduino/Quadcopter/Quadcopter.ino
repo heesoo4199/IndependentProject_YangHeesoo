@@ -109,3 +109,31 @@ void gyroCalibrate() {
   //wip
 }
 
+void PID(int throttle) {
+
+  if (/*k*/) {                                                          //The motors are started.
+    if (throttle > 1800) {
+      throttle = 1800;                                   //We need some room to keep full control at full throttle. 
+    }
+    esc1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
+    esc2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
+    esc3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
+    esc4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
+
+    if (esc1 < 1100) 
+      esc_1 = 1100;                                         
+    if (esc2 < 1100) 
+      esc_2 = 1100;                                         
+    if (esc3 < 1100) 
+      esc_3 = 1100;                                        
+    if (esc4 < 1100) 
+      esc_4 = 1100;                                         
+  }
+  else{
+    esc_1 = 1000;                                                      
+    esc_2 = 1000;                                                          
+    esc_3 = 1000;                                                           
+    esc_4 = 1000;                                                        
+  }
+}
+
