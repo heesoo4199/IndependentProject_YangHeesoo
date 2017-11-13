@@ -111,7 +111,7 @@ void gyroCalibrate() {
 
 void PID(int throttle) {
 
-  if (/*k*/) {                                                          //The motors are started.
+  if (/*k*/) {                                                         //The motors are started.
     if (throttle > 1800) {
       throttle = 1800;                                   //We need some room to keep full control at full throttle. 
     }
