@@ -106,7 +106,7 @@ void accelRead() {
 }
 
 void gyroCalibrate() {
-  //wip
+  //wip...
 }
 
 void PID(int throttle) {
