@@ -15,7 +15,7 @@ float roll, pitch, yaw; // roll & pitch = 0 if parallel to ground. yaw = 0 at st
 float rotX, rotY, rotZ; // Angular velocity (deg/s)
 float accX, accY, accZ; // Acceleration (g)
 
-// nRF24L01 constants
+// nRF24L01 constants//
 RF24 radio(7, 8); // Radio connection pins 7 & 8
 const byte radio_address[6] = "00001"; // Must match with transmitter
 
@@ -103,11 +103,6 @@ void accelRead() {
     accY = (Wire.read()<<8|Wire.read()) / 16384.0;
     accZ = (Wire.read()<<8|Wire.read()) / 16384.0;
   }
-}
-
-void gyroCalibrate() {
-  //wip...
-  //hi
 }
 
 void PID(int throttle) {
