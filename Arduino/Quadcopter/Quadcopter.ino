@@ -5,6 +5,7 @@
 #include <PID_v1.h>
 
 // Arduino variables
+bool started;
 long timer; // tracks time in microseconds.
 
 // Drone coordinate system
@@ -119,11 +120,11 @@ void PID(int throttle) {
     if (esc1 < 1100) 
       esc_1 = 1100;                                         
     if (esc2 < 1100) 
-      esc_2 = 1100;                                         
-    if (esc3 < 1100) 
-      esc_3 = 1100;                                        
+      esc_2 = 1000;                                         
+    if (esc3 < 1000) 
+      esc_3 = 1000;                                        
     if (esc4 < 1100) 
-      esc_4 = 1100;                                         
+      esc_4 = 1000;                                         
   }
   else{
     esc_1 = 1000;                                                      
