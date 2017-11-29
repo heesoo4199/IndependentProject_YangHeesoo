@@ -2,28 +2,28 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <PID_v1.h>
 
 // Arduino variables
 bool started;
 long timer; // tracks time in microseconds.
 
-// Drone coordinate system
-float x, y, z; // x, y, z (meters)
-float roll, pitch, yaw; // roll & pitch = 0 if parallel to ground. yaw = 0 at start (deg)
-
 // MPU-6050 constants
-float rotX, rotY, rotZ; // Angular velocity (deg/s)
+float gyroX, gyroY, gyroZ; // Angular velocity (deg/s)
 float accX, accY, accZ; // Acceleration (g)
 
 // nRF24L01 constants//
 RF24 radio(7, 8); // Radio connection pins 7 & 8
 const byte radio_address[6] = "00001"; // Must match with transmitter
 
-// PID controller constants
-double setpoint, input, output;
-double kP = 1, kI = 1, kD = 1;
-PID PIDController(input, output, setpoint, kP, kI, kD, DIRECT);
+Servo esc1, esc2, esc3, esc4; // 1 FR, 3 RL (CCW) | 2 RR, 4 FL (CW)
+float pid_p = 1.3;
+float pid_i = 0.04;
+float pid_d = 18.0;
+float pid_yaw_p = 4.0;
+float pid_yaw_i = 0.02;
+float pid_yaw_d = 0;
+int pid_max = 400;
+
 
 void setup() {
   Serial.begin(9600);
@@ -34,19 +34,16 @@ void setup() {
   radio.startListening();
   // MPU-6050 setup
   Wire.begin();
-  mpuInit(); // Initializes the MPU
-  // PID setup
-  // Input = sensor, so gyro/accel reading
-  PIDController.SetMode(AUTOMATIC);
-
-  // Coordinates initialization
-  x = 0;
-  y = 0;
-  z = 0;
-  yaw = 0;
-
-  // Set up control timer
-  timer = micros();
+  mpuInit();
+  // Connect ESCs
+  esc1.attach(1);
+  esc1.writeMicroseconds(1000);
+  esc2.attach(2);
+  esc2.writeMicroseconds(1000);
+  esc3.attach(3);
+  esc3.writeMicroseconds(1000);
+  esc4.attach(4);
+  esc4.writeMicroseconds(1000);
 }
 
 void loop() {
@@ -87,12 +84,12 @@ void gyroRead() {
   Wire.endTransmission();
   Wire.requestFrom(0b11010000, 6); // Requests values from address 43 to 48
   while (Wire.available() < 6) { 
-    rotX = (Wire.read()<<8|Wire.read()) / 131.0; // Divid raw value by 131 (LSB per degree)
-    rotY = (Wire.read()<<8|Wire.read()) / 131.0;
-    rotZ = (Wire.read()<<8|Wire.read()) / 131.0;
+    gyroX = (Wire.read()<<8|Wire.read()) / 131.0; // Divid raw value by 131 (LSB per degree)
+    gyroY = (Wire.read()<<8|Wire.read()) / 131.0;
+    gyroZ = (Wire.read()<<8|Wire.read()) / 131.0;
   }
 }
-// com
+
 // Sets accX, accY, and accZ to respective accelerometer values (in Gs)
 void accelRead() {
   Wire.beginTransmission(0b11010000);
@@ -106,27 +103,35 @@ void accelRead() {
   }
 }
 
-void PID(int throttle) {
-
-  if (/*k*/) {                                                         //The motors are started.
-    if (throttle > 1800) {
-      throttle = 1800;                                   //We need some room to keep full control at full throttle. 
+// Adjust ESC output based on user input.
+void PID(int throttle, int x, int y, int z) { 
+  if (started) 
+  {
+    if (throttle > 1800) 
+    {
+      throttle = 1800; // We need some room to keep full control at full throttle. 
     }
+    // Calculate PID based on input.
+    
+
+
+    // Apply PID output to ESCs
     esc1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
     esc2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
     esc3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
     esc4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
-
+    // Don't completely turn off any motors
     if (esc1 < 1100) 
       esc_1 = 1100;                                         
     if (esc2 < 1100) 
-      esc_2 = 1000;                                         
+      esc_2 = 1100;                                         
     if (esc3 < 1000) 
-      esc_3 = 1000;                                        
+      esc_3 = 1100;                                        
     if (esc4 < 1100) 
-      esc_4 = 1000;                                         
-  }
-  else{
+      esc_4 = 1100;                                         
+  } 
+  else 
+  {
     esc_1 = 1000;                                                      
     esc_2 = 1000;                                                          
     esc_3 = 1000;                                                           
