@@ -11,19 +11,30 @@ long timer; // tracks time in microseconds.
 float gyroX, gyroY, gyroZ; // Angular velocity (deg/s)
 float accX, accY, accZ; // Acceleration (g)
 
+float angleX, angleY, angleZ;
+
 // nRF24L01 constants//
 RF24 radio(7, 8); // Radio connection pins 7 & 8
 const byte radio_address[6] = "00001"; // Must match with transmitter
 
 Servo esc1, esc2, esc3, esc4; // 1 FR, 3 RL (CCW) | 2 RR, 4 FL (CW)
+int esc1_val, esc2_val, esc3_val, esc4_val; // Pulses for respective ESC in microseconds
+
 float pid_p = 1.3;
 float pid_i = 0.04;
 float pid_d = 18.0;
 float pid_yaw_p = 4.0;
 float pid_yaw_i = 0.02;
 float pid_yaw_d = 0;
-int pid_max = 400;
+int pid_max = 200;
 
+float pid_mem_roll = 0.0;
+float pid_mem_pitch = 0.0;
+float pid_mem_yaw = 0.0;
+
+float pid_last_err_roll = 0.0;
+float pid_last_err_pitch = 0.0;
+float pid_last_err_yaw = 0.0;
 
 void setup() {
   Serial.begin(9600);
@@ -54,6 +65,13 @@ void loop() {
   // Radio receiver processing
   if (radio.available()) {
     
+  }
+  if (started) 
+  {
+    esc1.writeMicroseconds(esc1_val);
+    esc2.writeMicroseconds(esc2_val);
+    esc3.writeMicroseconds(esc3_val);
+    esc4.writeMicroseconds(esc4_val);
   }
 }
 
@@ -104,33 +122,75 @@ void accelRead() {
 }
 
 // Adjust ESC output based on user input.
-void PID(int throttle, int x, int y, int z) { 
+void PID(int throttle, int roll, int pitch, int yaw) { 
   if (started) 
   {
     if (throttle > 1800) 
     {
       throttle = 1800; // We need some room to keep full control at full throttle. 
     }
-    // Calculate PID based on input.
-    
+    // Calculate PID setpoints based on input
+    // Say Joystick returns x (sideways), y (forwards/backwards), and z (rotation)
+    // And the map for the values is 1000 to 2000, where 1500 is the neutral position
+    // What should the max tilt be? Let's say 15 degrees.
+    // Then, the error in degrees is:
+    float err_roll = 15.0 / 500.0 * (roll - 1500) - angleX;
+    float err_pitch = 15.0 / 500.0 * (pitch - 1500) - angleY;
+    // For Z, use angular velocity, not position. Say, 30 deg/s
+    float err_yaw = 30.0 / 500.0 * (yaw - 1500);
 
+    // Accumulate the integral
+    pid_mem_roll += pid_i * err_roll;
+    pid_mem_pitch += pid_i * err_pitch;
+    pid_mem_yaw += pid_yaw_i * err_yaw;
+    // Don't want values over the max pid output being aggregated to integral
+    if (pid_mem_roll > pid_max)
+      pid_mem_roll = pid_max
+    else if (pid_mem_roll < -pid_max)
+      pid_mem_roll = -pid_max;
+    if (pid_mem_pitch > pid_max)
+      pid_mem_pitch = pid_max
+    else if (pid_mem_pitch < -pid_max)
+      pid_mem_pitch = -pid_max;
+    if (pid_mem_yaw > pid_max)
+      pid_mem_yaw = pid_max
+    else if (pid_mem_yaw < -pid_max)
+      pid_mem_yaw = -pid_max;
+
+    // Store err for use in next loop
+    pid_last_err_roll = err_roll;
+    pid_last_err_pitch = err_pitch;
+    pid_last_err_yaw = err_yaw;
+
+    pid_output_roll = pid_p * err_roll + pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
+    pid_output_pitch = pid_p * err_pitch + pid_mem_pitch + pid_d * (err_pitch - pid_last_err_pitch);
+    pid_output_yaw = pid_yaw_p * err_yaw + pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
 
     // Apply PID output to ESCs
-    esc1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
-    esc2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
-    esc3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
-    esc4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
-    // Don't completely turn off any motors
-    if (esc1 < 1100) 
-      esc_1 = 1100;                                         
-    if (esc2 < 1100) 
-      esc_2 = 1100;                                         
-    if (esc3 < 1000) 
-      esc_3 = 1100;                                        
-    if (esc4 < 1100) 
-      esc_4 = 1100;                                         
+    esc1_val = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
+    esc2_val = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
+    esc3_val = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
+    esc4_val = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
+    
+    // Limit operating range of ESCs to 1100us to 2000us while flight mode is active
+    if (esc1_val < 1100) 
+      esc1_val = 1100;                                         
+    if (esc2_val < 1100) 
+      esc2_val = 1100;                                         
+    if (esc3_val < 1000) 
+      esc3_val = 1100;                                        
+    if (esc4_val < 1100) 
+      esc4_val = 1100; 
+    if (esc1_val > 2000)
+      esc1_val = 2000;
+    if (esc2_val > 2000)
+      esc2_val = 2000;
+    if (esc3_val > 2000)
+      esc3_val = 2000;
+    if (esc4_val > 2000)
+      esc4_val = 2000;                                      
   } 
-  else 
+  else // Ensure motors are off when flight mode is not active
   {
     esc_1 = 1000;                                                      
     esc_2 = 1000;                                                          
