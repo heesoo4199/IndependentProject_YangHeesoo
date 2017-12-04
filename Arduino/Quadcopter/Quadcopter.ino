@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <Servo.h>
 
 // Arduino variables
 bool started;
@@ -40,7 +41,7 @@ void setup() {
   Serial.begin(9600);
   // nRF24L01 setup
   radio.begin();
-  radio.openReadingPipe(0, address);
+  radio.openReadingPipe(0, radio_address);
   radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
   // MPU-6050 setup
@@ -145,15 +146,15 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     pid_mem_yaw += pid_yaw_i * err_yaw;
     // Don't want values over the max pid output being aggregated to integral
     if (pid_mem_roll > pid_max)
-      pid_mem_roll = pid_max
+      pid_mem_roll = pid_max;
     else if (pid_mem_roll < -pid_max)
       pid_mem_roll = -pid_max;
     if (pid_mem_pitch > pid_max)
-      pid_mem_pitch = pid_max
+      pid_mem_pitch = pid_max;
     else if (pid_mem_pitch < -pid_max)
       pid_mem_pitch = -pid_max;
     if (pid_mem_yaw > pid_max)
-      pid_mem_yaw = pid_max
+      pid_mem_yaw = pid_max;
     else if (pid_mem_yaw < -pid_max)
       pid_mem_yaw = -pid_max;
 
@@ -162,9 +163,9 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     pid_last_err_pitch = err_pitch;
     pid_last_err_yaw = err_yaw;
 
-    pid_output_roll = pid_p * err_roll + pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
-    pid_output_pitch = pid_p * err_pitch + pid_mem_pitch + pid_d * (err_pitch - pid_last_err_pitch);
-    pid_output_yaw = pid_yaw_p * err_yaw + pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
+    float pid_output_roll = pid_p * err_roll + pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
+    float pid_output_pitch = pid_p * err_pitch + pid_mem_pitch + pid_d * (err_pitch - pid_last_err_pitch);
+    float pid_output_yaw = pid_yaw_p * err_yaw + pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
 
     // Apply PID output to ESCs
     esc1_val = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
@@ -192,10 +193,10 @@ void PID(int throttle, int roll, int pitch, int yaw) {
   } 
   else // Ensure motors are off when flight mode is not active
   {
-    esc_1 = 1000;                                                      
-    esc_2 = 1000;                                                          
-    esc_3 = 1000;                                                           
-    esc_4 = 1000;                                                        
+    esc1_val = 1000;                                                      
+    esc2_val = 1000;                                                          
+    esc3_val = 1000;                                                           
+    esc4_val = 1000;                                                        
   }
 }
 
