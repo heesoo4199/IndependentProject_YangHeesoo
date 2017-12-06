@@ -8,9 +8,8 @@ float gForceX, gForceY, gForceZ; // accel values in G
 long gyroX, gyroY, gyroZ; // Raw gyro values
 float rotX, rotY, rotZ; // gyro values in deg/s
 
-float gyroOffset[3];
+double gyroOffset[3];
 
-float posX, posY, posZ;
 float angleX, angleY, angleZ;
 
 void setup() 
@@ -24,8 +23,9 @@ void setup()
 
 void loop() 
 {
-  // put your main code here, to run repeatedly:
-  complementary();
+  float dt = (float) (micros() - timer) / 1000000;
+  timer = micros();
+  complementary(dt);
   printData();
 }
 
@@ -96,16 +96,18 @@ void printData() {
 
 void calibrate()
 {
-  for (int i = 0; i < 2000; i++)
+  int s = 10000;
+  for (int i = 0; i < s; i++)
   {
     gyroRead();
     gyroOffset[0] += rotX;
     gyroOffset[1] += rotY;
     gyroOffset[2] += rotZ;
+    delayMicroseconds(20);
   }
-  gyroOffset[0] /= 2000;
-  gyroOffset[1] /= 2000;
-  gyroOffset[2] /= 2000;
+  gyroOffset[0] /= s;
+  gyroOffset[1] /= s;
+  gyroOffset[2] /= s;
   Serial.println(gyroOffset[0]);
   Serial.println(gyroOffset[1]);
   Serial.println(gyroOffset[2]);
@@ -119,16 +121,17 @@ void adjust()
 }
 
 // angle = 0.98 *(angle+gyro*dt) + 0.02*acc
-void complementary()
+void complementary(float dt)
 {
-  double dt = (double)(micros() - timer) / 1000000; //This line does three things: 1) stops the timer, 2)converts the timer's output to seconds from microseconds, 3)casts the value as a double saved to "dt".
-  timer = micros();
   accelRead();
   gyroRead();
   adjust();
   float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
   float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
-  angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
-  angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
+  //angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
+  //angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
+  angleX += rotX * dt;
+  angleY += rotY * dt;
   angleZ += rotZ * dt;
 }
+
