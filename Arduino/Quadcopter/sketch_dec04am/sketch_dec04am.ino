@@ -128,10 +128,8 @@ void complementary(float dt)
   adjust();
   float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
   float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
-  //angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
-  //angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
-  angleX += rotX * dt;
-  angleY += rotY * dt;
+  angleX = 0.97 * (angleX + rotX * dt) + 0.03 * roll;
+  angleY = 0.97 * (angleY + rotY * dt) + 0.03 * pitch;
   angleZ += rotZ * dt;
 }
 
