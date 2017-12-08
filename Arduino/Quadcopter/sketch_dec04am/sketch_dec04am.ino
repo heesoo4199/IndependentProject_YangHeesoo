@@ -96,14 +96,14 @@ void printData() {
 
 void calibrate()
 {
-  int s = 10000;
+  int s = 3000;
   for (int i = 0; i < s; i++)
   {
     gyroRead();
     gyroOffset[0] += rotX;
     gyroOffset[1] += rotY;
     gyroOffset[2] += rotZ;
-    delayMicroseconds(20);
+    delayMicroseconds(1000);
   }
   gyroOffset[0] /= s;
   gyroOffset[1] /= s;
