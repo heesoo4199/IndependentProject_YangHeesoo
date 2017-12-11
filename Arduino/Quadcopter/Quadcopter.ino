@@ -5,12 +5,15 @@
 #include <Servo.h>
 
 // Arduino variables
-bool started;
-long timer; // tracks time in microseconds.
+uint32_t timer;
+bool started = false;
 
-// MPU-6050 constants
-float gyroX, gyroY, gyroZ; // Angular velocity (deg/s)
-float accX, accY, accZ; // Acceleration (g)
+long accelX, accelY, accelZ; // Raw accel values
+float gForceX, gForceY, gForceZ; // accel values in G
+long gyroX, gyroY, gyroZ; // Raw gyro values
+float rotX, rotY, rotZ; // gyro values in deg/s
+
+double gyroOffset[3];
 
 float angleX, angleY, angleZ;
 
@@ -27,7 +30,7 @@ float pid_d = 18.0;
 float pid_yaw_p = 4.0;
 float pid_yaw_i = 0.02;
 float pid_yaw_d = 0;
-int pid_max = 200;
+int pid_max = 50;
 
 float pid_mem_roll = 0.0;
 float pid_mem_pitch = 0.0;
@@ -46,7 +49,9 @@ void setup() {
   radio.startListening();
   // MPU-6050 setup
   Wire.begin();
-  mpuInit();
+  setupMPU();
+  calibrate();
+  timer = micros();
   // Connect ESCs
   esc1.attach(1);
   esc1.writeMicroseconds(1000);
@@ -59,10 +64,10 @@ void setup() {
 }
 
 void loop() {
+  float dt = (float) (micros() - timer) / 1000000;
   timer = micros();
-  // Read and update gyroscope and accelerometer values
-  gyroRead();
-  accelRead();
+  complementary(dt);
+  printData();
   // Radio receiver processing
   if (radio.available()) {
     
@@ -74,57 +79,128 @@ void loop() {
     esc3.writeMicroseconds(esc3_val);
     esc4.writeMicroseconds(esc4_val);
   }
+  PID(1500, 0, 0, 0);
+  printData();
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
 // https://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Register-Map1.pdf
-void mpuInit() {
-  // Disable sleep mode
-  Wire.beginTransmission(0b1101000); // MPU access register
-  Wire.write(0x6B); // 6B register for power management
-  Wire.write(0b00000000); // 2nd bit = 0 for sleep off
+void setupMPU()
+{
+  Wire.beginTransmission(0b1101000); //This is the I2C address of the MPU (b1101000/b1101001 for AC0 low/high datasheet sec. 9.2)
+  Wire.write(0x6B); //Accessing the register 6B - Power Management (Sec. 4.28)
+  Wire.write(0b00000000); //Setting SLEEP register to 0. (Required; see Note on p. 9)
   Wire.endTransmission();
-  // Set gyro sensitivity
-  Wire.beginTransmission(0b1101000);
-  Wire.write(0x1B);
-  Wire.write(0b00000000);
+  Wire.beginTransmission(0b1101000); //I2C address of the MPU
+  Wire.write(0x1B); //Accessing the register 1B - Gyroscope Configuration (Sec. 4.4)
+  Wire.write(0x00000000); //Setting the gyro to full scale +/- 250deg./s
   Wire.endTransmission();
-  // Set accelerometer sensitivity
-  Wire.beginTransmission(0b1101000);
-  Wire.write(0x1C);
-  Wire.write(0b00000000);
+  Wire.beginTransmission(0b1101000); //I2C address of the MPU
+  Wire.write(0x1C); //Accessing the register 1C - Acccelerometer Configuration (Sec. 4.5)
+  Wire.write(0b00000000); //Setting the accel to +/- 2g
   Wire.endTransmission();
-}
-
-// Sets rotX, rotY, and rotZ to respective gyro values (in degrees per second)
-void gyroRead() {
-  Wire.beginTransmission(0b11010000);
-  Wire.write(0x43);
-  Wire.endTransmission();
-  Wire.requestFrom(0b11010000, 6); // Requests values from address 43 to 48
-  while (Wire.available() < 6) { 
-    gyroX = (Wire.read()<<8|Wire.read()) / 131.0; // Divid raw value by 131 (LSB per degree)
-    gyroY = (Wire.read()<<8|Wire.read()) / 131.0;
-    gyroZ = (Wire.read()<<8|Wire.read()) / 131.0;
-  }
 }
 
 // Sets accX, accY, and accZ to respective accelerometer values (in Gs)
-void accelRead() {
-  Wire.beginTransmission(0b11010000);
+void accelRead() 
+{
+  Wire.beginTransmission(0b1101000);
   Wire.write(0x3B);
   Wire.endTransmission();
-  Wire.requestFrom(0b11010000, 6); // Requests values from address 3B to 40
-  while (Wire.available() < 6) { 
-    accX = (Wire.read()<<8|Wire.read()) / 16384.0; // Divid raw value by 16384 (LSB per g)
-    accY = (Wire.read()<<8|Wire.read()) / 16384.0;
-    accZ = (Wire.read()<<8|Wire.read()) / 16384.0;
-  }
+  Wire.requestFrom(0b1101000, 6); // Requests values from address 3B to 40
+  while(Wire.available() < 6); 
+  accelX = Wire.read()<<8|Wire.read(); //Store first two bytes into accelX
+  accelY = Wire.read()<<8|Wire.read(); //Store middle two bytes into accelY
+  accelZ = Wire.read()<<8|Wire.read(); //Store last two bytes into accelZ
+  gForceX = accelX / 16384.0;
+  gForceY = accelY / 16384.0;
+  gForceZ = accelZ / 16384.0;
 }
+
+// Sets rotX, rotY, and rotZ to respective gyro values (in degrees per second)
+void gyroRead() 
+{
+  Wire.beginTransmission(0b1101000);
+  Wire.write(0x43);
+  Wire.endTransmission();
+  Wire.requestFrom(0b1101000, 6); // Requests values from address 43 to 48
+  while (Wire.available() < 6); 
+  gyroX = Wire.read()<<8|Wire.read();
+  gyroY = Wire.read()<<8|Wire.read();
+  gyroZ = Wire.read()<<8|Wire.read();
+  rotX = gyroX / 131.0;
+  rotY = gyroY / 131.0;
+  rotZ = gyroZ / 131.0;
+}
+
+void printData() {
+  /*Serial.print("Gyro (deg)");
+  Serial.print(" X=");
+  Serial.print(angleX);
+  Serial.print(" Y=");
+  Serial.print(angleY);
+  Serial.print(" Z=");
+  Serial.print(angleZ);
+  Serial.print(" Accel (g)");
+  Serial.print(" X=");
+  Serial.print(gForceX);
+  Serial.print(" Y=");
+  Serial.print(gForceY);
+  Serial.print(" Z=");
+  Serial.print(gForceZ);
+  Serial.print(", ESC1: ");
+  Serial.print(esc1_val);
+  Serial.print(", ESC2: ");
+  Serial.print(esc2_val);
+  Serial.print(", ESC3: ");
+  Serial.print(esc3_val);
+  Serial.print(", ESC4: ");
+  Serial.println(esc4_val);*/
+}
+
+void calibrate()
+{
+  int s = 3000;
+  for (int i = 0; i < s; i++)
+  {
+    gyroRead();
+    gyroOffset[0] += rotX;
+    gyroOffset[1] += rotY;
+    gyroOffset[2] += rotZ;
+    delayMicroseconds(1000);
+  }
+  gyroOffset[0] /= s;
+  gyroOffset[1] /= s;
+  gyroOffset[2] /= s;
+  Serial.println(gyroOffset[0]);
+  Serial.println(gyroOffset[1]);
+  Serial.println(gyroOffset[2]);
+}
+
+void adjust()
+{
+  rotX -= gyroOffset[0];
+  rotY -= gyroOffset[1];
+  rotZ -= gyroOffset[2];
+}
+
+// angle = 0.98 *(angle+gyro*dt) + 0.02*acc
+void complementary(float dt)
+{
+  accelRead();
+  gyroRead();
+  adjust();
+  float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
+  float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
+  angleX = 0.97 * (angleX + rotX * dt) + 0.03 * roll;
+  angleY = 0.97 * (angleY + rotY * dt) + 0.03 * pitch;
+  angleZ += rotZ * dt;
+}
+
 
 // Adjust ESC output based on user input.
 void PID(int throttle, int roll, int pitch, int yaw) { 
-  if (started) 
+  if (true) 
   {
     if (throttle > 1800) 
     {
@@ -172,9 +248,36 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     esc2_val = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
     esc3_val = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
     esc4_val = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
-    
+    Serial.print("Gyro (deg)");
+  Serial.print(" X=");
+  Serial.print(angleX);
+  Serial.print(" Y=");
+  Serial.print(angleY);
+  Serial.print(" Z=");
+  Serial.print(angleZ);
+  Serial.print(" Accel (g)");
+  Serial.print(" X=");
+  Serial.print(gForceX);
+  Serial.print(" Y=");
+  Serial.print(gForceY);
+  Serial.print(" Z=");
+  Serial.print(gForceZ);
+  Serial.print(", ESC1: ");
+  Serial.print(esc1_val);
+  Serial.print(", ESC2: ");
+  Serial.print(esc2_val);
+  Serial.print(", ESC3: ");
+  Serial.print(esc3_val);
+  Serial.print(", ESC4: ");
+  Serial.print(esc4_val);
+  Serial.print(", roll: ");
+  Serial.print(pid_output_roll);
+  Serial.print(", pitch: ");
+  Serial.print(pid_output_pitch);
+  Serial.print(", yaw: ");
+  Serial.println(pid_output_yaw);   
     // Limit operating range of ESCs to 1100us to 2000us while flight mode is active
-    if (esc1_val < 1100) 
+    /*if (esc1_val < 1100) 
       esc1_val = 1100;                                         
     if (esc2_val < 1100) 
       esc2_val = 1100;                                         
@@ -189,7 +292,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     if (esc3_val > 2000)
       esc3_val = 2000;
     if (esc4_val > 2000)
-      esc4_val = 2000;                                      
+      esc4_val = 2000; */                               
   } 
   else // Ensure motors are off when flight mode is not active
   {
