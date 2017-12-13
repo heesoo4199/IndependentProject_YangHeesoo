@@ -30,7 +30,7 @@ float pid_d = 18.0;
 float pid_yaw_p = 4.0;
 float pid_yaw_i = 0.02;
 float pid_yaw_d = 0;
-int pid_max = 50;
+int pid_max = 400;
 
 float pid_mem_roll = 0.0;
 float pid_mem_pitch = 0.0;
@@ -67,7 +67,7 @@ void loop() {
   float dt = (float) (micros() - timer) / 1000000;
   timer = micros();
   complementary(dt);
-  printData();
+  //printData();
   // Radio receiver processing
   if (radio.available()) {
     
@@ -134,7 +134,7 @@ void gyroRead()
 }
 
 void printData() {
-  /*Serial.print("Gyro (deg)");
+  Serial.print("Gyro (deg)");
   Serial.print(" X=");
   Serial.print(angleX);
   Serial.print(" Y=");
@@ -155,12 +155,12 @@ void printData() {
   Serial.print(", ESC3: ");
   Serial.print(esc3_val);
   Serial.print(", ESC4: ");
-  Serial.println(esc4_val);*/
+  Serial.println(esc4_val);
 }
 
 void calibrate()
 {
-  int s = 3000;
+  int s = 2000;
   for (int i = 0; i < s; i++)
   {
     gyroRead();
@@ -192,8 +192,8 @@ void complementary(float dt)
   adjust();
   float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
   float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
-  angleX = 0.97 * (angleX + rotX * dt) + 0.03 * roll;
-  angleY = 0.97 * (angleY + rotY * dt) + 0.03 * pitch;
+  angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
+  angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
   angleZ += rotZ * dt;
 }
 
@@ -244,10 +244,10 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     float pid_output_yaw = pid_yaw_p * err_yaw + pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
 
     // Apply PID output to ESCs
-    esc1_val = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //(front-right - CCW)
-    esc2_val = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //(rear-right - CW)
-    esc3_val = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //(rear-left - CCW)
-    esc4_val = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //(front-left - CW)
+    esc1_val = throttle - pid_output_pitch + pid_output_roll;// - pid_output_yaw; //(front-right - CCW)
+    esc2_val = throttle + pid_output_pitch + pid_output_roll;// + pid_output_yaw; //(rear-right - CW)
+    esc3_val = throttle + pid_output_pitch - pid_output_roll;// - pid_output_yaw; //(rear-left - CCW)
+    esc4_val = throttle - pid_output_pitch - pid_output_roll;// + pid_output_yaw; //(front-left - CW)
     Serial.print("Gyro (deg)");
   Serial.print(" X=");
   Serial.print(angleX);
@@ -277,7 +277,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
   Serial.print(", yaw: ");
   Serial.println(pid_output_yaw);   
     // Limit operating range of ESCs to 1100us to 2000us while flight mode is active
-    /*if (esc1_val < 1100) 
+    if (esc1_val < 1100) 
       esc1_val = 1100;                                         
     if (esc2_val < 1100) 
       esc2_val = 1100;                                         
@@ -292,7 +292,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     if (esc3_val > 2000)
       esc3_val = 2000;
     if (esc4_val > 2000)
-      esc4_val = 2000; */                               
+      esc4_val = 2000;                             
   } 
   else // Ensure motors are off when flight mode is not active
   {
