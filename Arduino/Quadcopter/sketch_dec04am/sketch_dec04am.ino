@@ -119,7 +119,7 @@ void adjust()
   rotY -= gyroOffset[1];
   rotZ -= gyroOffset[2];
 }
-
+//
 // angle = 0.98 *(angle+gyro*dt) + 0.02*acc
 void complementary(float dt)
 {
