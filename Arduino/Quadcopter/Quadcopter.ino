@@ -5,21 +5,14 @@
 #include <Servo.h>
 
 // Arduino variables
-uint32_t timer;
-bool started = false;
+unsigned long loop_timer;
 
 long accelX, accelY, accelZ; // Raw accel values
-float gForceX, gForceY, gForceZ; // accel values in G
 long gyroX, gyroY, gyroZ; // Raw gyro values
+float gForceX, gForceY, gForceZ; // accel values in Gs
 float rotX, rotY, rotZ; // gyro values in deg/s
-
+float angleX, angleY, angleZ; // gyro angle in degrees
 double gyroOffset[3];
-
-float angleX, angleY, angleZ;
-
-// nRF24L01 constants//
-RF24 radio(7, 8); // Radio connection pins 7 & 8
-const byte radio_address[6] = "00001"; // Must match with transmitter
 
 Servo esc1, esc2, esc3, esc4; // 1 FR, 3 RL (CCW) | 2 RR, 4 FL (CW)
 int esc1_val, esc2_val, esc3_val, esc4_val; // Pulses for respective ESC in microseconds
@@ -42,17 +35,12 @@ float pid_last_err_yaw = 0.0;
 
 void setup() {
   Serial.begin(9600);
-  // nRF24L01 setup
-  radio.begin();
-  radio.openReadingPipe(0, radio_address);
-  radio.setPALevel(RF24_PA_MIN);
-  radio.startListening();
   // MPU-6050 setup
   Wire.begin();
   setupMPU();
   calibrate();
-  timer = micros();
   // Connect ESCs
+  /*
   esc1.attach(1);
   esc1.writeMicroseconds(1000);
   esc2.attach(2);
@@ -61,27 +49,18 @@ void setup() {
   esc3.writeMicroseconds(1000);
   esc4.attach(4);
   esc4.writeMicroseconds(1000);
+  */
+
+  loop_timer = micros();
 }
 
 void loop() {
-  float dt = (float) (micros() - timer) / 1000000;
-  timer = micros();
-  complementary(dt);
-  //printData();
-  // Radio receiver processing
-  if (radio.available()) {
-    // Take throttle value for now, and store it to throttle
-    //int throttle = radio.get something
-    if (started) 
-    {
-      PID(throttle, 0, 0, 0);
-      esc1.writeMicroseconds(esc1_val);
-      esc2.writeMicroseconds(esc2_val);
-      esc3.writeMicroseconds(esc3_val);
-      esc4.writeMicroseconds(esc4_val);
-    }  
-    printData();
-  }
+  printData();
+  if(micros() - loop_timer > 4050)
+    Serial.println("Loop exceeded 4000us!");
+  while(micros() - loop_timer < 4000) // Wait 4000us
+    loop_timer = micros();                                                    
+
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
@@ -100,6 +79,24 @@ void setupMPU()
   Wire.write(0x1C); //Accessing the register 1C - Acccelerometer Configuration (Sec. 4.5)
   Wire.write(0b00000000); //Setting the accel to +/- 2g
   Wire.endTransmission();
+}
+
+void calibrate()
+{
+  for (int i = 0; i < 2000; i++)
+  {
+    gyroRead();
+    gyroOffset[0] += rotX;
+    gyroOffset[1] += rotY;
+    gyroOffset[2] += rotZ;
+    delayMicroseconds(3000);
+  }
+  gyroOffset[0] /= s;
+  gyroOffset[1] /= s;
+  gyroOffset[2] /= s;
+  Serial.println(gyroOffset[0]);
+  Serial.println(gyroOffset[1]);
+  Serial.println(gyroOffset[2]);
 }
 
 // Sets accX, accY, and accZ to respective accelerometer values (in Gs)
@@ -134,68 +131,23 @@ void gyroRead()
   rotZ = gyroZ / 131.0;
 }
 
-void printData() {
-  Serial.print("Gyro (deg)");
-  Serial.print(" X=");
-  Serial.print(angleX);
-  Serial.print(" Y=");
-  Serial.print(angleY);
-  Serial.print(" Z=");
-  Serial.print(angleZ);
-  Serial.print(" Accel (g)");
-  Serial.print(" X=");
-  Serial.print(gForceX);
-  Serial.print(" Y=");
-  Serial.print(gForceY);
-  Serial.print(" Z=");
-  Serial.print(gForceZ);
-  Serial.print(", ESC1: ");
-  Serial.print(esc1_val);
-  Serial.print(", ESC2: ");
-  Serial.print(esc2_val);
-  Serial.print(", ESC3: ");
-  Serial.print(esc3_val);
-  Serial.print(", ESC4: ");
-  Serial.println(esc4_val);
-}
-
-void calibrate()
-{
-  int s = 2000;
-  for (int i = 0; i < s; i++)
-  {
-    gyroRead();
-    gyroOffset[0] += rotX;
-    gyroOffset[1] += rotY;
-    gyroOffset[2] += rotZ;
-    delayMicroseconds(1000);
-  }
-  gyroOffset[0] /= s;
-  gyroOffset[1] /= s;
-  gyroOffset[2] /= s;
-  Serial.println(gyroOffset[0]);
-  Serial.println(gyroOffset[1]);
-  Serial.println(gyroOffset[2]);
-}
-
-void adjust()
+void adjustGyro()
 {
   rotX -= gyroOffset[0];
   rotY -= gyroOffset[1];
   rotZ -= gyroOffset[2];
 }
 
-// angle = 0.98 *(angle+gyro*dt) + 0.02*acc
-void complementary(float dt)
+void complementary()
 {
   accelRead();
   gyroRead();
-  adjust();
+  adjustGyro();
   float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
   float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
   angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
   angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
-  angleZ += rotZ * dt;
+  angleZ += rotZ * (1.0 / 250);
 }
 
 // Adjust ESC output based on user input.
@@ -217,11 +169,12 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     float err_yaw = 30.0 / 500.0 * (yaw - 1500);
 
     // Accumulate the integral
-    pid_mem_roll += pid_i * err_roll;
-    pid_mem_pitch += pid_i * err_pitch;
-    pid_mem_yaw += pid_yaw_i * err_yaw;
+    pid_mem_roll += err_roll;
+    pid_mem_pitch += err_pitch;
+    pid_mem_yaw += err_yaw;
     
     // Don't want values over the max pid output being aggregated to integral
+    /* Not quite sure how this works yet.
     if (pid_mem_roll > pid_max)
       pid_mem_roll = pid_max;
     else if (pid_mem_roll < -pid_max)
@@ -234,16 +187,17 @@ void PID(int throttle, int roll, int pitch, int yaw) {
       pid_mem_yaw = pid_max;
     else if (pid_mem_yaw < -pid_max)
       pid_mem_yaw = -pid_max;
-
+    */
     // Store err for use in next loop
     pid_last_err_roll = err_roll;
     pid_last_err_pitch = err_pitch;
     pid_last_err_yaw = err_yaw;
+    pid_last_time = micros();
 
     // Calculate PID output
-    float pid_output_roll = pid_p * err_roll + pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
-    float pid_output_pitch = pid_p * err_pitch + pid_mem_pitch + pid_d * (err_pitch - pid_last_err_pitch);
-    float pid_output_yaw = pid_yaw_p * err_yaw + pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
+    float pid_output_roll = pid_p * err_roll + pid_i * pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
+    float pid_output_pitch = pid_p * err_pitch + pid_i * pid_mem_pitch + pid_d * (err_pitch - pid_last_err_pitch);
+    float pid_output_yaw = pid_yaw_p * err_yaw + pid_yaw_i * pid_mem_yaw + pid_yaw_d * (err_yaw - pid_last_err_yaw);
 
     // Limit PID output to specified value (pid_max);
     if (pid_output_roll > pid_max)
@@ -320,5 +274,30 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     esc3_val = 1000;                                                           
     esc4_val = 1000;                                                        
   }
+}
+
+void printData() {
+  Serial.print("Gyro (deg)");
+  Serial.print(" X=");
+  Serial.print(angleX);
+  Serial.print(" Y=");
+  Serial.print(angleY);
+  Serial.print(" Z=");
+  Serial.print(angleZ);
+  Serial.print(" Accel (g)");
+  Serial.print(" X=");
+  Serial.print(gForceX);
+  Serial.print(" Y=");
+  Serial.print(gForceY);
+  Serial.print(" Z=");
+  Serial.print(gForceZ);
+  Serial.print(", ESC1: ");
+  Serial.print(esc1_val);
+  Serial.print(", ESC2: ");
+  Serial.print(esc2_val);
+  Serial.print(", ESC3: ");
+  Serial.print(esc3_val);
+  Serial.print(", ESC4: ");
+  Serial.println(esc4_val);
 }
 
