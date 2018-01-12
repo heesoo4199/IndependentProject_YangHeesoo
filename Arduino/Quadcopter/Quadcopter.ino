@@ -4,7 +4,7 @@
 #include <RF24.h>
 #include <Servo.h>
 
-// Arduino variables
+// Arduino variables//
 unsigned long loop_timer;
 //s
 long accelX, accelY, accelZ; // Raw accel values
