@@ -6,7 +6,7 @@
 
 // Arduino variables//
 unsigned long loop_timer;
-//s
+//sa
 long accelX, accelY, accelZ; // Raw accel values
 long gyroX, gyroY, gyroZ; // Raw gyro values
 float gForceX, gForceY, gForceZ; // accel values in Gs
