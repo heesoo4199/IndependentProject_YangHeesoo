@@ -36,9 +36,10 @@ float pid_last_err_yaw = 0.0;
 void setup() {
   Serial.begin(9600);
   // MPU-6050 setup
+  /*
   Wire.begin();
   setupMPU();
-  calibrate();
+  calibrate();*/
   // Connect ESCs
   /*
   esc1.attach(1);
@@ -55,12 +56,12 @@ void setup() {
 }
 
 void loop() {
-  printData();
+  //printData();
+  Serial.println(micros());
   if(micros() - loop_timer > 4050)
     Serial.println("Loop exceeded 4000us!");
   while(micros() - loop_timer < 4000) // Wait 4000us
     loop_timer = micros();                                                    
-
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
