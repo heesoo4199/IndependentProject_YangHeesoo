@@ -6,7 +6,7 @@
 
 // Arduino variables//
 unsigned long loop_timer;
-//sa
+
 long accelX, accelY, accelZ; // Raw accel values
 long gyroX, gyroY, gyroZ; // Raw gyro values
 float gForceX, gForceY, gForceZ; // accel values in Gs
@@ -33,15 +33,23 @@ float pid_last_err_roll = 0.0;
 float pid_last_err_pitch = 0.0;
 float pid_last_err_yaw = 0.0;
 
+// Radio
+RF24 radio(7,8);
+const byte address[6] = "00001";
+
 void setup() {
   Serial.begin(9600);
+  // Radio setup
+  radio.begin();
+  radio.openReadingPipe(0,address);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
+  radio.startListening();  
   // MPU-6050 setup
-  /*
   Wire.begin();
   setupMPU();
-  calibrate();*/
+  calibrate();
   // Connect ESCs
-  /*
   esc1.attach(1);
   esc1.writeMicroseconds(1000);
   esc2.attach(2);
@@ -50,18 +58,28 @@ void setup() {
   esc3.writeMicroseconds(1000);
   esc4.attach(4);
   esc4.writeMicroseconds(1000);
-  */
-
+  // Start loop timer
   loop_timer = micros();
 }
 
 void loop() {
-  //printData();
-  Serial.println(micros());
-  if(micros() - loop_timer > 4050)
-    Serial.println("Loop exceeded 4000us!");
-  while(micros() - loop_timer < 4000) // Wait 4000us
+  Serial.print(millis());
+  Serial.print("AND");
+  Serial.println(readRadio());
+  while(micros() - loop_timer < 4000); // Wait 4000us
     loop_timer = micros();                                                    
+}
+
+// Only reads throttle for now
+int readRadio()
+{
+  char text[32] = "";
+  if (radio.available()) {
+    radio.read(&text, sizeof(text));
+    String transData = String(text);
+    return map(transData.toInt(), 0, 1023, 1000, 2000);
+  }
+  return 0;
 }
 
 // Disables sleep mode, and sets sensitivity for the gyro and accelerometer.
@@ -92,9 +110,9 @@ void calibrate()
     gyroOffset[2] += rotZ;
     delayMicroseconds(3000);
   }
-  gyroOffset[0] /= s;
-  gyroOffset[1] /= s;
-  gyroOffset[2] /= s;
+  gyroOffset[0] /= 2000;
+  gyroOffset[1] /= 2000;
+  gyroOffset[2] /= 2000;
   Serial.println(gyroOffset[0]);
   Serial.println(gyroOffset[1]);
   Serial.println(gyroOffset[2]);
@@ -146,8 +164,8 @@ void complementary()
   adjustGyro();
   float roll = atan2(accelY, accelZ) * 180 / 3.14159265358;
   float pitch = atan2(-accelX, accelZ) * 180 / 3.14159265358;
-  angleX = 0.99 * (angleX + rotX * dt) + 0.01 * roll;
-  angleY = 0.99 * (angleY + rotY * dt) + 0.01 * pitch;
+  angleX = 0.99 * (angleX + rotX * 0) + 0.01 * roll;
+  angleY = 0.99 * (angleY + rotY * 0) + 0.01 * pitch;
   angleZ += rotZ * (1.0 / 250);
 }
 
@@ -175,7 +193,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     pid_mem_yaw += err_yaw;
     
     // Don't want values over the max pid output being aggregated to integral
-    /* Not quite sure how this works yet.
+    //>/???
     if (pid_mem_roll > pid_max)
       pid_mem_roll = pid_max;
     else if (pid_mem_roll < -pid_max)
@@ -188,12 +206,12 @@ void PID(int throttle, int roll, int pitch, int yaw) {
       pid_mem_yaw = pid_max;
     else if (pid_mem_yaw < -pid_max)
       pid_mem_yaw = -pid_max;
-    */
+    
     // Store err for use in next loop
     pid_last_err_roll = err_roll;
     pid_last_err_pitch = err_pitch;
     pid_last_err_yaw = err_yaw;
-    pid_last_time = micros();
+    //pid_last_time = micros();
 
     // Calculate PID output
     float pid_output_roll = pid_p * err_roll + pid_i * pid_mem_roll + pid_d * (err_roll - pid_last_err_roll);
@@ -203,15 +221,15 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     // Limit PID output to specified value (pid_max);
     if (pid_output_roll > pid_max)
       pid_output_roll = pid_max;
-    else if (pid output_roll < -pid_max)
+    else if (pid_output_roll < -pid_max)
       pid_output_roll = -pid_max;
     if (pid_output_pitch > pid_max)
       pid_output_pitch = pid_max;
-    else if (pid output_pitch < -pid_max)
+    else if (pid_output_pitch < -pid_max)
       pid_output_pitch = -pid_max;
     if (pid_output_yaw > pid_max)
       pid_output_yaw = pid_max;
-    else if (pid output_yaw < -pid_max)
+    else if (pid_output_yaw < -pid_max)
       pid_output_yaw = -pid_max; 
       
     // Apply PID output to ESCs
@@ -237,7 +255,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
       esc3_val = 2000;
     if (esc4_val > 2000)
       esc4_val = 2000;  
-
+    /*
     // Print stuff
     Serial.print("Gyro (deg)");
     Serial.print(" X=");
@@ -267,6 +285,7 @@ void PID(int throttle, int roll, int pitch, int yaw) {
     Serial.print(pid_output_pitch);
     Serial.print(", yaw: ");
     Serial.println(pid_output_yaw); 
+    */
   } 
   else // Ensure motors are off when flight mode is not active
   {
@@ -301,4 +320,3 @@ void printData() {
   Serial.print(", ESC4: ");
   Serial.println(esc4_val);
 }
-
