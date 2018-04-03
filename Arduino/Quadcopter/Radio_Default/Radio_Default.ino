@@ -8,6 +8,7 @@ const byte address[6] = "00001";
 
 void setup() {
   radio.begin();
+  Serial.begin(9600);
   radio.openWritingPipe(address);
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_250KBPS);
@@ -20,5 +21,6 @@ void loop() {
   int str_len = str.length() + 1;
   char text[str_len];
   str.toCharArray(text, str_len);
-  radio.write(&text, sizeof(text));
+  bool yes = radio.write(&text, sizeof(text));
+  Serial.println(yes);
 }
