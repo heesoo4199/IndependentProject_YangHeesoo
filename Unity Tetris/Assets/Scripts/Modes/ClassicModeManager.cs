@@ -5,16 +5,25 @@ using UnityEngine;
 public class ClassicModeManager : MonoBehaviour {
 
 	public float speed;
-	public bool isActive;
+	public bool isPaused;
 	public int score;
+	public GameObject[] tetriminos = new GameObject[6];
 
 	// Use this for initialization
 	void Start () {
-		
+		GenerateTetrimino ();
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		
 	}
+
+	public void GenerateTetrimino() {
+		GameObject tetrimino = (GameObject) Instantiate (tetriminos [(int) Random.Range (0f, 7f)]);
+		tetrimino.GetComponent<TetriminoManager> ().velocity = speed;
+		GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
+		inputManager.GetComponent<InputManager> ().GetNewActiveTetrimino ();
+	}
+
 }

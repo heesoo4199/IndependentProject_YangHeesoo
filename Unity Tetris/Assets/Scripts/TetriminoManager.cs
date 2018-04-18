@@ -5,10 +5,11 @@ using UnityEngine;
 public class TetriminoManager : MonoBehaviour {
 
 	public float velocity;
+	private float velocity_original;
 
 	// Use this for initialization
 	void Start () {
-		
+		velocity_original = velocity;
 	}
 	
 	// Update is called once per frame
@@ -21,15 +22,26 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Left() {
-		transform.position = new Vector3 (transform.position.x - 2, transform.position.y);
+		transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
 	}
 
 	public void Right() {
-		transform.position = new Vector3 (transform.position.x + 2, transform.position.y);
+		transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
 	}
 
 	public void Accelerate() {
+		velocity = velocity_original * 2f;
+	}
 
+	public void UnAccelerate() {
+		velocity = velocity_original / 2f;
+	}
+
+	void OnCollisionEnter2D(Collision2D coll) {
+		velocity = 0f;
+		gameObject.tag = "TetriminoInactive";
+		GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
+		manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
 	}
 
 }

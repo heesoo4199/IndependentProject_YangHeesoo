@@ -8,7 +8,7 @@ public class InputManager : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		TetriminoActive = GameObject.FindGameObjectWithTag ("TetriminoActive");
+		
 	}
 	
 	// Update is called once per frame
@@ -24,7 +24,14 @@ public class InputManager : MonoBehaviour {
 		}
 
 		if (Input.GetKey (KeyCode.DownArrow)) {
-			TetriminoActive.GetComponent<TetriminoManager>().Accelerate ();
+			TetriminoActive.GetComponent<TetriminoManager> ().Accelerate ();
+		} else if (Input.GetKeyUp (KeyCode.DownArrow)) {
+			TetriminoActive.GetComponent<TetriminoManager> ().UnAccelerate ();
 		}
 	}
+
+	public void GetNewActiveTetrimino() {
+		TetriminoActive = GameObject.FindGameObjectWithTag ("TetriminoActive");
+	}
+
 }
