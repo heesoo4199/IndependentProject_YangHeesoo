@@ -20,7 +20,7 @@ public class ClassicModeManager : MonoBehaviour {
 	}
 
 	public void GenerateTetrimino() {
-		GameObject tetrimino = (GameObject) Instantiate (tetriminos [(int) Random.Range (0f, 7f)]);
+		GameObject tetrimino = (GameObject) Instantiate (tetriminos [(int) Random.Range (0f, 6f)]);
 		tetrimino.GetComponent<TetriminoManager> ().velocity = speed;
 		GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
 		inputManager.GetComponent<InputManager> ().GetNewActiveTetrimino ();

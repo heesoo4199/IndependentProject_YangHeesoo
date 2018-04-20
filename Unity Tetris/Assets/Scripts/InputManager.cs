@@ -16,7 +16,9 @@ public class InputManager : MonoBehaviour {
 		if (Input.GetKeyDown (KeyCode.UpArrow)) {
 			TetriminoActive.GetComponent<TetriminoManager>().Rotate ();
 		}	
-
+		if (Input.GetKeyDown (KeyCode.Space)) {
+			TetriminoActive.GetComponent<TetriminoManager> ().Drop ();
+		}
 		if (Input.GetKeyDown (KeyCode.LeftArrow)) {
 			TetriminoActive.GetComponent<TetriminoManager>().Left ();
 		} else if (Input.GetKeyDown (KeyCode.RightArrow)) {

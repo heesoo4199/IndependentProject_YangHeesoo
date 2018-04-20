@@ -37,11 +37,27 @@ public class TetriminoManager : MonoBehaviour {
 		velocity = velocity_original / 2f;
 	}
 
+	public void Drop() {
+		FloorMeasure ();
+	}
+
+	void FloorMeasure() {
+		RaycastHit hit;
+		Transform child = transform.GetChild (0);
+		if (Physics.Linecast(child.position, new Vector3(child.position.x, -10f), out hit)) {
+			float dist = hit.distance;
+
+		}
+		print (hit.distance);
+	}
+
 	void OnCollisionEnter2D(Collision2D coll) {
-		velocity = 0f;
-		gameObject.tag = "TetriminoInactive";
-		GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
-		manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
+		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
+			velocity = 0f;
+			gameObject.tag = "TetriminoInactive";
+			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
+			manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
+		}
 	}
 
 }
