@@ -40,7 +40,8 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Drop() {
-		FloorMeasure ();
+		float dist = FloorMeasure ();
+		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 1f);
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
@@ -55,14 +56,43 @@ public class TetriminoManager : MonoBehaviour {
 	 * 3. Raycast downward from the list of lowest-y-value squares
 	 * 4. Remaining y-distance left is the lowest distance value
 	 */
-	void FloorMeasure() {
-		RaycastHit hit;
-		Transform child = transform.GetChild (0);
-		if (Physics.Linecast(child.position, new Vector3(child.position.x, -10f), out hit)) {
-			float dist = hit.distance;
 
+	// returns smallest distance from the current piece to the floor.
+	float FloorMeasure() {
+		List<Transform> list = new List<Transform> ();
+		float min = float.MaxValue;
+		for (int i = 0; i < 4; i++) {
+			if (transform.GetChild(i).position.y < min) {
+				min = transform.GetChild(i).position.y;
+			}
 		}
-		print (hit.distance);
+		for (int i = 0; i < 4; i++) {
+			Transform child = transform.GetChild (i);
+			if (CloseEnough(child.position.y, min, 0.1f)) {
+				list.Add (child);
+			}
+		}
+		float minDist = float.MaxValue;
+		foreach (Transform child in list) {
+			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, child.TransformDirection (Vector2.down), Mathf.Infinity);
+			// Does the ray intersect any objects excluding the player layer
+			if (hit [1])
+			{
+				if (hit [1].distance < minDist) {
+					minDist = hit [1].distance;
+				}
+			}
+			else
+			{
+				Debug.Log("Did not Hit");
+			}
+		}
+		return minDist;
+	}
+
+	static bool CloseEnough(float a, float b, float tolerance)
+	{
+		return Mathf.Abs(a - b) <= tolerance; 
 	}
 
 	void OnCollisionEnter2D(Collision2D coll) {
