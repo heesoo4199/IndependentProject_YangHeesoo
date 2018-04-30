@@ -23,12 +23,12 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Left() {
 		transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
-		Round ();
+		RoundX ();
 	}
 
 	public void Right() {
 		transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
-		Round ();
+		RoundX ();
 	}
 
 	public void Accelerate() {
@@ -40,14 +40,23 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Drop() {
+		velocity = velocity_original / 10f;
+		RoundX ();
 		float dist = FloorMeasure ();
-		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 1f);
+		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.7f);
+		RoundY ();
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
-	void Round() {
+	void RoundX() {
 		float x = transform.position.x;
 		transform.position = new Vector3 (Mathf.Round (x), transform.position.y);
+	}
+
+	void RoundY() {
+		float y = transform.position.y;
+		print (Mathf.Round (y * 2f) / 2f);
+		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 2f) / 2f);
 	}
 
 	/* TODO: 
@@ -60,22 +69,15 @@ public class TetriminoManager : MonoBehaviour {
 	// returns smallest distance from the current piece to the floor.
 	float FloorMeasure() {
 		List<Transform> list = new List<Transform> ();
-		float min = float.MaxValue;
 		for (int i = 0; i < 4; i++) {
-			if (transform.GetChild(i).position.y < min) {
-				min = transform.GetChild(i).position.y;
-			}
-		}
-		for (int i = 0; i < 4; i++) {
-			Transform child = transform.GetChild (i);
-			if (CloseEnough(child.position.y, min, 0.1f)) {
-				list.Add (child);
-			}
+			list.Add (transform.GetChild (i));
 		}
 		float minDist = float.MaxValue;
 		foreach (Transform child in list) {
-			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, child.TransformDirection (Vector2.down), Mathf.Infinity);
-			// Does the ray intersect any objects excluding the player layer
+			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, Vector2.down, Mathf.Infinity);
+			if (hit [1].collider.transform.parent.gameObject.tag == "TetriminoActive") {
+				continue;
+			}
 			if (hit [1])
 			{
 				if (hit [1].distance < minDist) {
