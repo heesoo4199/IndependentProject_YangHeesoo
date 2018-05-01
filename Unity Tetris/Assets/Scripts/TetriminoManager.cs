@@ -18,7 +18,7 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Rotate() {
-		transform.Rotate (new Vector3 (0, 0, 90));
+		transform.Rotate (new Vector3 (0, 0, -90));
 	}
 
 	public void Left() {
@@ -40,11 +40,11 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Drop() {
-		velocity = velocity_original / 10f;
+		velocity = 0f;
 		RoundX ();
 		float dist = FloorMeasure ();
-		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.7f);
-		RoundY ();
+		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.5f);
+		//RoundY ();
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
@@ -103,6 +103,7 @@ public class TetriminoManager : MonoBehaviour {
 			gameObject.tag = "TetriminoInactive";
 			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
 			manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
+			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
 		}
 	}
 
