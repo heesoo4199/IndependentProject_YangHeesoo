@@ -5,6 +5,7 @@ using UnityEngine;
 public class TetriminoManager : MonoBehaviour {
 
 	public float velocity;
+	public GameObject copy;
 	private float velocity_original;
 
 	// Use this for initialization
@@ -19,16 +20,23 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Rotate() {
 		transform.Rotate (new Vector3 (0, 0, -90));
+		MoveCopy ();
 	}
 
 	public void Left() {
-		transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
-		RoundX ();
+		if (transform.position.x > -4f) {
+			transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
+			RoundX ();
+			MoveCopy ();
+		}
 	}
 
 	public void Right() {
-		transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
-		RoundX ();
+		if (transform.position.x < 4f) {
+			transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
+			RoundX ();
+			MoveCopy ();
+		}
 	}
 
 	public void Accelerate() {
@@ -100,18 +108,32 @@ public class TetriminoManager : MonoBehaviour {
 	void OnCollisionEnter2D(Collision2D coll) {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
 			velocity = 0f;
+			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
+			Destroy (copy);
 			gameObject.tag = "TetriminoInactive";
+			if (transform.position.y >= 10) {
+				Die ();
+			}
 			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
 			manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
-			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
 		}
 	}
 
 	void OnTriggerEnter2D(Collider2D coll) {
 		if (coll.gameObject.tag == "Wall") {
-			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
-			manager.GetComponent<ClassicModeManager> ().Stop ();
+			Die ();
 		}
+	}
+
+	void Die() {
+		GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
+		manager.GetComponent<ClassicModeManager> ().Stop ();
+	}
+
+	public void MoveCopy() {
+		float dist = FloorMeasure ();
+		copy.transform.rotation = transform.rotation;
+		copy.transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.5f);
 	}
 
 }

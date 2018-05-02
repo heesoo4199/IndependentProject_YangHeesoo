@@ -21,8 +21,24 @@ public class ClassicModeManager : MonoBehaviour {
 
 	public void GenerateTetrimino() {
 		if (!isPaused) {
-			GameObject tetrimino = (GameObject) Instantiate (tetriminos [(int) Random.Range (0f, 6f)]);
-			tetrimino.GetComponent<TetriminoManager> ().velocity = speed;
+			int chooser = (int)Random.Range (0f, 6f);
+			// Prep tetromino
+			GameObject tetrimino = (GameObject) Instantiate (tetriminos [chooser]);
+			TetriminoManager manager = tetrimino.GetComponent<TetriminoManager> ();
+			manager.velocity = speed;
+			// Prep copy
+			GameObject copy = (GameObject) Instantiate (tetriminos [chooser]);
+			copy.tag = "TetriminoCopy";
+			Destroy (copy.GetComponent<Rigidbody2D> ());
+			Destroy (copy.GetComponent<TetriminoManager> ());
+			for (int i = 0; i < 4; i++) {
+				GameObject child = copy.transform.GetChild (i).gameObject;
+				Destroy (child.GetComponent<BoxCollider2D> ());
+				child.GetComponent<SpriteRenderer> ().color = new Color(1f, 1f, 1f, 0.3f);
+			}
+			manager.copy = copy;
+			manager.MoveCopy ();
+			// Prep input
 			GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
 			inputManager.GetComponent<InputManager> ().GetNewActiveTetrimino ();
 		}
