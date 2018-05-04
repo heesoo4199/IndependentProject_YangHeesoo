@@ -24,7 +24,8 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Left() {
-		if (transform.position.x > -4f) {
+		float leftClearance = SideMeasure (-1);
+		if (leftClearance >= 1f) {
 			transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
 			RoundX ();
 			MoveCopy ();
@@ -32,7 +33,8 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	public void Right() {
-		if (transform.position.x < 4f) {
+		float rightClearance = SideMeasure (1);
+		if (rightClearance >= 1f) {
 			transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
 			RoundX ();
 			MoveCopy ();
@@ -63,8 +65,8 @@ public class TetriminoManager : MonoBehaviour {
 
 	void RoundY() {
 		float y = transform.position.y;
-		print (Mathf.Round (y * 2f) / 2f);
-		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 2f) / 2f);
+		print (Mathf.Round (y * 10f) / 10f);
+		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 10f) / 10f);
 	}
 
 	/* TODO: 
@@ -100,6 +102,32 @@ public class TetriminoManager : MonoBehaviour {
 		return minDist;
 	}
 
+	// left = -1, right = 1;
+	float SideMeasure(int dir) {
+		List<Transform> list = new List<Transform> ();
+		for (int i = 0; i < 4; i++) {
+			list.Add (transform.GetChild (i));
+		}
+		float minDist = float.MaxValue;
+		foreach (Transform child in list) {
+			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, dir * Vector2.right, Mathf.Infinity);
+			if (hit [1].collider.transform.parent.gameObject.tag == "TetriminoActive") {
+				continue;
+			}
+			if (hit [1])
+			{
+				if (hit [1].distance < minDist) {
+					minDist = hit [1].distance;
+				}
+			}
+			else
+			{
+				Debug.Log("Did not Hit");
+			}
+		}
+		return minDist;
+	}
+
 	static bool CloseEnough(float a, float b, float tolerance)
 	{
 		return Mathf.Abs(a - b) <= tolerance; 
@@ -109,6 +137,7 @@ public class TetriminoManager : MonoBehaviour {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
 			velocity = 0f;
 			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
+			RoundY ();
 			Destroy (copy);
 			gameObject.tag = "TetriminoInactive";
 			if (transform.position.y >= 10) {
