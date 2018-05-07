@@ -1,13 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ClassicModeManager : MonoBehaviour {
 
 	public float speed;
 	public bool isPaused;
 	public int score;
+
 	public GameObject[] tetriminos = new GameObject[6];
+	public Text scoreText;
 
 	// Use this for initialization
 	void Start () {
@@ -42,6 +45,48 @@ public class ClassicModeManager : MonoBehaviour {
 			GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
 			inputManager.GetComponent<InputManager> ().GetNewActiveTetrimino ();
 		}
+		scoreText.text = "Score: " + score;
+	}
+
+	public void ClearLines() {
+		int count = 0;
+		for (int i = 0; i < 20; i++) {
+			List<Transform> line = GetLine (i);
+			if (line.Count == 10) {
+				Clear (line, i);
+				i--;
+				count++;
+			}
+		}
+		score += count;
+	}
+
+	// 0 is bottom, 19 is top.
+	void Clear(List<Transform> line, int row) {
+		// Remove squares in line
+		foreach (Transform square in line) {
+			Destroy (square.gameObject);
+		}
+		// Shift all lines above down
+		for (int i = row + 1; i < 20; i++) {
+			List<Transform> l = GetLine (i);
+			foreach (Transform s in l) {
+				s.position = new Vector3 (s.position.x, s.position.y - 1f);
+			}
+		}
+	}
+
+	//
+	List<Transform> GetLine(int row) {
+		Transform child = transform.GetChild (row);
+		RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, Vector2.right, Mathf.Infinity);
+		List<Transform> ret = new List<Transform>();
+		foreach (RaycastHit2D h in hit) {
+			ret.Add (h.collider.transform);
+		}
+		ret.RemoveAt (0);
+		ret.RemoveAt (ret.Count - 1);
+		return ret;
 	}
 
 	public void Stop() {

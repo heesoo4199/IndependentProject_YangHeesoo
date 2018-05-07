@@ -54,7 +54,6 @@ public class TetriminoManager : MonoBehaviour {
 		RoundX ();
 		float dist = FloorMeasure ();
 		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.5f);
-		//RoundY ();
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
@@ -66,7 +65,7 @@ public class TetriminoManager : MonoBehaviour {
 	void RoundY() {
 		float y = transform.position.y;
 		print (Mathf.Round (y * 10f) / 10f);
-		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 10f) / 10f);
+		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 100f) / 100f);
 	}
 
 	/* TODO: 
@@ -137,13 +136,14 @@ public class TetriminoManager : MonoBehaviour {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
 			velocity = 0f;
 			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
-			RoundY ();
+			//RoundY ();
 			Destroy (copy);
 			gameObject.tag = "TetriminoInactive";
 			if (transform.position.y >= 10) {
 				Die ();
 			}
 			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
+			manager.GetComponent<ClassicModeManager> ().ClearLines ();
 			manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
 		}
 	}
