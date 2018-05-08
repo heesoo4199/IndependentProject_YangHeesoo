@@ -20,6 +20,8 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Rotate() {
 		transform.Rotate (new Vector3 (0, 0, -90));
+		Clamp ();
+		RoundX ();
 		MoveCopy ();
 	}
 
@@ -58,14 +60,40 @@ public class TetriminoManager : MonoBehaviour {
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
 	void RoundX() {
-		float x = transform.position.x;
-		transform.position = new Vector3 (Mathf.Round (x), transform.position.y);
+		float newX = transform.position.x;
+		transform.position = new Vector3 (Mathf.Round (newX), transform.position.y);
 	}
 
 	void RoundY() {
 		float y = transform.position.y;
 		print (Mathf.Round (y * 10f) / 10f);
 		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 100f) / 100f);
+	}
+
+	void RoundChildren() {
+		for (int i = 0; i < 4; i++) {
+			Transform child = transform.GetChild (i);
+			child.position = new Vector3 (Mathf.Round (child.position.x), Mathf.Round (child.position.y));
+		}
+	}
+
+	// Also, if the piece happens to go out of bounds, move it back in.
+	void Clamp() {
+		RoundChildren ();
+		float largestX = 0f;
+		for (int i = 0; i < 4; i++) {
+			Transform child = transform.GetChild (i);
+			if (Mathf.Abs (child.position.x) > Mathf.Abs(largestX)) {
+				largestX = child.position.x;
+			}
+		}
+		if (largestX < -5) {
+			float delta = Mathf.Abs (largestX + 5);
+			transform.position = new Vector3(-5f + delta, transform.position.y);
+		} else if (largestX > 4) {
+			float delta = Mathf.Abs (largestX - 4);
+			transform.position = new Vector3(4f - delta, transform.position.y);
+		}
 	}
 
 	/* TODO: 

@@ -6,10 +6,11 @@ using UnityEngine.UI;
 public class ClassicModeManager : MonoBehaviour {
 
 	public float speed;
+	public float acceleration;
 	public bool isPaused;
 	public int score;
 
-	public GameObject[] tetriminos = new GameObject[6];
+	public GameObject[] tetriminos = new GameObject[7];
 	public Text scoreText;
 
 	// Use this for initialization
@@ -19,12 +20,13 @@ public class ClassicModeManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		
+		speed = (speed + acceleration * Time.deltaTime);
 	}
 
+	//hi
 	public void GenerateTetrimino() {
 		if (!isPaused) {
-			int chooser = (int)Random.Range (0f, 6f);
+			int chooser = (int)Random.Range (0f, 7f);
 			// Prep tetromino
 			GameObject tetrimino = (GameObject) Instantiate (tetriminos [chooser]);
 			TetriminoManager manager = tetrimino.GetComponent<TetriminoManager> ();
