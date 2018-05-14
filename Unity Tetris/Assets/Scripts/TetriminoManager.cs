@@ -20,7 +20,7 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Rotate() {
 		transform.Rotate (new Vector3 (0, 0, -90));
-		Clamp ();
+		//Clamp ();
 		RoundX ();
 		MoveCopy ();
 	}
@@ -79,7 +79,7 @@ public class TetriminoManager : MonoBehaviour {
 
 	// Also, if the piece happens to go out of bounds, move it back in.
 	void Clamp() {
-		RoundChildren ();
+		/*RoundChildren ();
 		float largestX = 0f;
 		for (int i = 0; i < 4; i++) {
 			Transform child = transform.GetChild (i);
@@ -93,7 +93,7 @@ public class TetriminoManager : MonoBehaviour {
 		} else if (largestX > 4) {
 			float delta = Mathf.Abs (largestX - 4);
 			transform.position = new Vector3(4f - delta, transform.position.y);
-		}
+		}*/
 	}
 
 	/* TODO: 
