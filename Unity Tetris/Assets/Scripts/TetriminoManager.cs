@@ -27,7 +27,7 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Left() {
 		float leftClearance = SideMeasure (-1);
-		if (leftClearance >= 1f) {
+		if (leftClearance > 1f) {
 			transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
 			RoundX ();
 			MoveCopy ();
@@ -36,7 +36,7 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Right() {
 		float rightClearance = SideMeasure (1);
-		if (rightClearance >= 1f) {
+		if (rightClearance > 1f) {
 			transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
 			RoundX ();
 			MoveCopy ();
@@ -76,32 +76,6 @@ public class TetriminoManager : MonoBehaviour {
 			child.position = new Vector3 (Mathf.Round (child.position.x), Mathf.Round (child.position.y));
 		}
 	}
-
-	// Also, if the piece happens to go out of bounds, move it back in.
-	void Clamp() {
-		/*RoundChildren ();
-		float largestX = 0f;
-		for (int i = 0; i < 4; i++) {
-			Transform child = transform.GetChild (i);
-			if (Mathf.Abs (child.position.x) > Mathf.Abs(largestX)) {
-				largestX = child.position.x;
-			}
-		}
-		if (largestX < -5) {
-			float delta = Mathf.Abs (largestX + 5);
-			transform.position = new Vector3(-5f + delta, transform.position.y);
-		} else if (largestX > 4) {
-			float delta = Mathf.Abs (largestX - 4);
-			transform.position = new Vector3(4f - delta, transform.position.y);
-		}*/
-	}
-
-	/* TODO: 
-	 * 1. Access children (sub-squares)
-	 * 2. Find group of squares with lowest y-value and store in list
-	 * 3. Raycast downward from the list of lowest-y-value squares
-	 * 4. Remaining y-distance left is the lowest distance value
-	 */
 
 	// returns smallest distance from the current piece to the floor.
 	float FloorMeasure() {
