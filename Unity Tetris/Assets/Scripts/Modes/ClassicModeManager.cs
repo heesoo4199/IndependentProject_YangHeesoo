@@ -78,13 +78,6 @@ public class ClassicModeManager : MonoBehaviour {
 		}
 	}
 
-	// If piece is detected going out of bounds (sideways), then move it back in.
-	void Clamp() {
-		Transform l = transform.GetChild (20);
-		Transform r = transform.GetChild (21);
-		// raycasting
-	}
-
 	//
 	List<Transform> GetLine(int row) {
 		Transform child = transform.GetChild (row);
