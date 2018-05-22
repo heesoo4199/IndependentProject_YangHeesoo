@@ -77,6 +77,12 @@ public class TetriminoManager : MonoBehaviour {
 		}
 	}
 
+	// returns true if current piece is intersecting the wall or another piece.
+	bool Intersects() {
+		//Physics.com
+		// need to update unity.
+	}
+
 	// returns smallest distance from the current piece to the floor.
 	float FloorMeasure() {
 		List<Transform> list = new List<Transform> ();
