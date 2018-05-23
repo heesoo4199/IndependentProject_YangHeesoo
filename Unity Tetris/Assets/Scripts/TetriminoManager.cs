@@ -75,7 +75,7 @@ public class TetriminoManager : MonoBehaviour {
 			Transform child = transform.GetChild (i);
 			child.position = new Vector3 (Mathf.Round (child.position.x), Mathf.Round (child.position.y));
 		}
-	}
+	}//
 
 	// returns true if current piece is intersecting the wall or another piece.
 	bool Intersects() {
