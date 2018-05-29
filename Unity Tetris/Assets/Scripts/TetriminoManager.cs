@@ -10,40 +10,41 @@ public class TetriminoManager : MonoBehaviour {
     private ClassicModeManager manager;
 	private float velocity_original;
 
-	// Use this for initialization
-	void Start () {
-		velocity_original = velocity;
+	private void Awake()
+	{
         manager = GameObject.FindGameObjectWithTag("ModeManager").GetComponent<ClassicModeManager>();
+	}
+
+	// Use this for initialization
+	void Start() {
+        velocity_original = velocity;
 	}
 	
 	// Update is called once per frame
-	void Update () {
-		transform.position = new Vector3 (transform.position.x, transform.position.y - (velocity * Time.deltaTime));
+	void Update() {
+		transform.position = new Vector3(transform.position.x, transform.position.y - (velocity * Time.deltaTime));
+        RoundX();
 	}
 
 	public void Rotate() {
-		transform.Rotate (new Vector3 (0, 0, -90));
-		//Clamp ();
-		RoundX ();
-		MoveCopy ();
+		transform.Rotate(new Vector3 (0, 0, -90));
+        if (Intersects())
+            transform.Rotate(new Vector3(0, 0, 90));
+		MoveCopy();
 	}
 
 	public void Left() {
-		float leftClearance = SideMeasure (-1);
-		if (leftClearance > 1f) {
-			transform.position = new Vector3 (transform.position.x - 1f, transform.position.y);
-			RoundX ();
-			MoveCopy ();
-		}
+        transform.position = new Vector3(transform.position.x - 1f, transform.position.y);
+        if (Intersects())
+            Right();
+        MoveCopy();
 	}
 
 	public void Right() {
-		float rightClearance = SideMeasure (1);
-		if (rightClearance > 1f) {
-			transform.position = new Vector3 (transform.position.x + 1f, transform.position.y);
-			RoundX ();
-			MoveCopy ();
-		}
+        transform.position = new Vector3(transform.position.x + 1f, transform.position.y);
+        if (Intersects())
+            Left();
+        MoveCopy();
 	}
 
 	public void Accelerate() {
@@ -56,138 +57,164 @@ public class TetriminoManager : MonoBehaviour {
 
 	public void Drop() {
 		velocity = 0f;
-		RoundX ();
-		float dist = FloorMeasure ();
-		transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.5f);
+        float dist = FloorMeasure();
+        transform.position = new Vector3(transform.position.x, transform.position.y - dist + 0.5f);
+        //transform.position = new Vector3(transform.position.x, LowestY());
+        //Next();
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
 	void RoundX() {
-		float newX = transform.position.x;
-		transform.position = new Vector3 (Mathf.Round (newX), transform.position.y);
-	}
-
-	void RoundY() {
-		float y = transform.position.y;
-		print (Mathf.Round (y * 10f) / 10f);
-		transform.position = new Vector3 (transform.position.x, Mathf.Round (y * 100f) / 100f);
-	}
-
-	void RoundChildren() {
-		for (int i = 0; i < 4; i++) {
-			Transform child = transform.GetChild (i);
-			child.position = new Vector3 (Mathf.Round (child.position.x), Mathf.Round (child.position.y));
-		}
-	}//
+        transform.position = new Vector3(Mathf.Round (transform.position.x), transform.position.y);
+    }
 
 	// returns true if current piece is intersecting the wall or another piece.
     bool Intersects() {
         foreach (Transform child in transform) {
-            float x = RoundHalf(child.position.x);
-            float y = RoundHalf(child.position.y);
-            if (x < 0 || x > 10)
+            if (child.position.x < 0 || child.position.x > 10)
                 return true;
-           //if (manager.grid[Mathf.RoundToInt(x)]
-                //return true;
+            if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y)] != null)
+                return true;
+            if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y + 0.5f)] != null)
+                return true;
         }
         return false;
 	}
 
-	// returns smallest distance from the current piece to the floor.
-	float FloorMeasure() {
-		List<Transform> list = new List<Transform> ();
-		for (int i = 0; i < 4; i++) {
-			list.Add (transform.GetChild (i));
-		}
-		float minDist = float.MaxValue;
-		foreach (Transform child in list) {
-			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, Vector2.down, Mathf.Infinity);
-			if (hit [1].collider.transform.parent.gameObject.tag == "TetriminoActive") {
-				continue;
-			}
-			if (hit [1])
-			{
-				if (hit [1].distance < minDist) {
-					minDist = hit [1].distance;
-				}
-			}
-			else
-            {
-				Debug.Log("Did not Hit");
-			}
-		}
-		return minDist;
-	}
+    // returns the lowest Y coordinate that this piece can achieve in the current orientation and x position.
+    int LowestY() {
+        List<int> x = new List<int>();
+        int minY = 0;
+        foreach (Transform child in transform) {
+            x.Add(RoundWhole(child.position.x));
+        }
+        foreach (int coord in x) {
+            for (int i = 19; i >= 0; i--) {
+                if (manager.grid[coord, i] != null) {
+                    i++;
+                    if (i > minY)
+                        minY = i;
+                    break;
+                }
+            }
+        }
+        return minY;
+    }
 
-	// left = -1, right = 1;
-	float SideMeasure(int dir) {
-		List<Transform> list = new List<Transform> ();
-		for (int i = 0; i < 4; i++) {
-			list.Add (transform.GetChild (i));
-		}
-		float minDist = float.MaxValue;
-		foreach (Transform child in list) {
-			RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, dir * Vector2.right, Mathf.Infinity);
-			if (hit [1].collider.transform.parent.gameObject.tag == "TetriminoActive") {
-				continue;
-			}
-			if (hit [1])
-			{
-				if (hit [1].distance < minDist) {
-					minDist = hit [1].distance;
-				}
-			}
-			else
-			{
-				Debug.Log("Did not Hit");
-			}
-		}
-		return minDist;
-	}
-
-    static int RoundWhole (float a) {
+    int RoundWhole (float a) {
         return Mathf.RoundToInt(a);
     }
 
-    // Round to the nearest 0.5f
-	static float RoundHalf(float a)
-	{
+	float RoundHalf(float a) {
         return Mathf.Round(a * 2) / 2f;
 	}
 
 	void OnCollisionEnter2D(Collision2D coll) {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
-			velocity = 0f;
-			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
-            foreach (Transform child in transform) {
-                int x = RoundWhole(child.position.x);
-                int y = RoundWhole(child.position.y);
-                manager.grid[x, y] = child;
-            }
-			Destroy (copy);
-			gameObject.tag = "TetriminoInactive";
-			if (transform.position.y >= 10) {
-				Die ();
-			}
-			manager.ClearLines ();
-			manager.GenerateTetrimino ();
+            Next();
 		}
 	}
 
+    // ceiling contact estop
 	void OnTriggerEnter2D(Collider2D coll) {
 		if (coll.gameObject.tag == "Wall") {
 			Die ();
 		}
 	}
 
+    // returns smallest distance from the current piece to the floor.
+    float FloorMeasure()
+    {
+        List<Transform> list = new List<Transform>();
+        for (int i = 0; i < 4; i++)
+        {
+            list.Add(transform.GetChild(i));
+        }
+        float minDist = float.MaxValue;
+        foreach (Transform child in list)
+        {
+            RaycastHit2D[] hit = Physics2D.RaycastAll(child.position, Vector2.down, Mathf.Infinity);
+            if (hit[1].collider.transform.parent.gameObject.tag == "TetriminoActive")
+            {
+                continue;
+            }
+            if (hit[1])
+            {
+                if (hit[1].distance < minDist)
+                {
+                    minDist = hit[1].distance;
+                }
+            }
+            else
+            {
+                Debug.Log("Did not Hit");
+            }
+        }
+        return minDist;
+    }
+
+    // left = -1, right = 1;
+    float SideMeasure(int dir)
+    {
+        List<Transform> list = new List<Transform>();
+        for (int i = 0; i < 4; i++)
+        {
+            list.Add(transform.GetChild(i));
+        }
+        float minDist = float.MaxValue;
+        foreach (Transform child in list)
+        {
+            RaycastHit2D[] hit = Physics2D.RaycastAll(child.position, dir * Vector2.right, Mathf.Infinity);
+            if (hit[1].collider.transform.parent.gameObject.tag == "TetriminoActive")
+            {
+                continue;
+            }
+            if (hit[1])
+            {
+                if (hit[1].distance < minDist)
+                {
+                    minDist = hit[1].distance;
+                }
+            }
+            else
+            {
+                Debug.Log("Did not Hit");
+            }
+        }
+        return minDist;
+    }
+
+    void Next() {
+        velocity = 0f;
+        GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
+        foreach (Transform child in transform)
+        {
+            int x = RoundWhole(child.position.x);
+            int y = RoundWhole(child.position.y);
+            print(x + ", " + y);
+            manager.grid[x, y] = child;
+            child.transform.position = new Vector3(x, y);
+            child.tag = "TetriminoInactive";
+        }
+        Destroy(copy);
+        gameObject.tag = "TetriminoInactive";
+        if (transform.position.y >= 20)
+        {
+            Die();
+        }
+        manager.ClearLines();
+        manager.GenerateTetrimino();
+    }
+
 	void Die() {
-		manager.Stop ();
+		//manager.Stop();
 	}
 
 	public void MoveCopy() {
-		float dist = FloorMeasure ();
 		copy.transform.rotation = transform.rotation;
-		copy.transform.position = new Vector3 (transform.position.x, transform.position.y - dist + 0.5f);
+        float dist = FloorMeasure();
+        copy.transform.position = new Vector3(transform.position.x, transform.position.y - dist + 0.5f);
+        //copy.transform.position = new Vector3 (transform.position.x, LowestY());
 	}
 
 }

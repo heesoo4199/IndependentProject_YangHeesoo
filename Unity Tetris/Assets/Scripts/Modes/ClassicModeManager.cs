@@ -13,9 +13,11 @@ public class ClassicModeManager : MonoBehaviour {
 	public GameObject[] tetriminos = new GameObject[7];
 	public Text scoreText;
 
+    public Transform[,] grid = new Transform[10, 20];
+
 	// Use this for initialization
 	void Start () {
-		GenerateTetrimino ();
+        GenerateTetrimino();
 	}
 	
 	// Update is called once per frame
