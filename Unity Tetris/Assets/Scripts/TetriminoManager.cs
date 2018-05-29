@@ -6,11 +6,14 @@ public class TetriminoManager : MonoBehaviour {
 
 	public float velocity;
 	public GameObject copy;
+
+    private ClassicModeManager manager;
 	private float velocity_original;
 
 	// Use this for initialization
 	void Start () {
 		velocity_original = velocity;
+        manager = GameObject.FindGameObjectWithTag("ModeManager").GetComponent<ClassicModeManager>();
 	}
 	
 	// Update is called once per frame
@@ -78,9 +81,16 @@ public class TetriminoManager : MonoBehaviour {
 	}//
 
 	// returns true if current piece is intersecting the wall or another piece.
-	bool Intersects() {
-		//Physics.com
-		// need to update unity.
+    bool Intersects() {
+        foreach (Transform child in transform) {
+            float x = RoundHalf(child.position.x);
+            float y = RoundHalf(child.position.y);
+            if (x < 0 || x > 10)
+                return true;
+           //if (manager.grid[Mathf.RoundToInt(x)]
+                //return true;
+        }
+        return false;
 	}
 
 	// returns smallest distance from the current piece to the floor.
@@ -102,7 +112,7 @@ public class TetriminoManager : MonoBehaviour {
 				}
 			}
 			else
-			{
+            {
 				Debug.Log("Did not Hit");
 			}
 		}
@@ -135,24 +145,32 @@ public class TetriminoManager : MonoBehaviour {
 		return minDist;
 	}
 
-	static bool CloseEnough(float a, float b, float tolerance)
+    static int RoundWhole (float a) {
+        return Mathf.RoundToInt(a);
+    }
+
+    // Round to the nearest 0.5f
+	static float RoundHalf(float a)
 	{
-		return Mathf.Abs(a - b) <= tolerance; 
+        return Mathf.Round(a * 2) / 2f;
 	}
 
 	void OnCollisionEnter2D(Collision2D coll) {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
 			velocity = 0f;
 			GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeAll;
-			//RoundY ();
+            foreach (Transform child in transform) {
+                int x = RoundWhole(child.position.x);
+                int y = RoundWhole(child.position.y);
+                manager.grid[x, y] = child;
+            }
 			Destroy (copy);
 			gameObject.tag = "TetriminoInactive";
 			if (transform.position.y >= 10) {
 				Die ();
 			}
-			GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
-			manager.GetComponent<ClassicModeManager> ().ClearLines ();
-			manager.GetComponent<ClassicModeManager> ().GenerateTetrimino ();
+			manager.ClearLines ();
+			manager.GenerateTetrimino ();
 		}
 	}
 
@@ -163,8 +181,7 @@ public class TetriminoManager : MonoBehaviour {
 	}
 
 	void Die() {
-		GameObject manager = GameObject.FindGameObjectWithTag ("ModeManager");
-		manager.GetComponent<ClassicModeManager> ().Stop ();
+		manager.Stop ();
 	}
 
 	public void MoveCopy() {
