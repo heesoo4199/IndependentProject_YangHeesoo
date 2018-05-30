@@ -36,14 +36,14 @@ public class TetriminoManager : MonoBehaviour {
 	public void Left() {
         transform.position = new Vector3(transform.position.x - 1f, transform.position.y);
         if (Intersects())
-            Right();
+            transform.position = new Vector3(transform.position.x + 1f, transform.position.y);
         MoveCopy();
 	}
 
 	public void Right() {
         transform.position = new Vector3(transform.position.x + 1f, transform.position.y);
         if (Intersects())
-            Left();
+            transform.position = new Vector3(transform.position.x - 1f, transform.position.y);
         MoveCopy();
 	}
 
@@ -58,9 +58,8 @@ public class TetriminoManager : MonoBehaviour {
 	public void Drop() {
 		velocity = 0f;
         float dist = FloorMeasure();
-        transform.position = new Vector3(transform.position.x, transform.position.y - dist + 0.5f);
-        //transform.position = new Vector3(transform.position.x, LowestY());
-        //Next();
+        transform.position = new Vector3(transform.position.x, RoundHalf(transform.position.y - dist + 0.5f));
+        Next();
 	}
 
 	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
@@ -71,12 +70,14 @@ public class TetriminoManager : MonoBehaviour {
 	// returns true if current piece is intersecting the wall or another piece.
     bool Intersects() {
         foreach (Transform child in transform) {
-            if (child.position.x < 0 || child.position.x > 10)
+            if (child.position.x < -0.5 || child.position.x > 9.5)
                 return true;
-            if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y)] != null)
-                return true;
-            if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y + 0.5f)] != null)
-                return true;
+            if (child.position.y < 19) {
+                if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y)] != null)
+                    return true;
+                if (manager.grid[RoundWhole(child.position.x), RoundWhole(child.position.y + 0.5f)] != null)
+                    return true;
+            }
         }
         return false;
 	}
@@ -113,6 +114,12 @@ public class TetriminoManager : MonoBehaviour {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
             Next();
 		}
+        // if this piece is inactive and collides with an active piece, then make sure the piece doesnt get pushed in any way.
+        else if (gameObject.tag == "TetriminoInactive") {
+            foreach (Transform child in transform) {
+                child.position = new Vector3(RoundWhole(child.position.x), RoundWhole(child.position.y));
+            }
+        }
 	}
 
     // ceiling contact estop
@@ -153,37 +160,6 @@ public class TetriminoManager : MonoBehaviour {
         return minDist;
     }
 
-    // left = -1, right = 1;
-    float SideMeasure(int dir)
-    {
-        List<Transform> list = new List<Transform>();
-        for (int i = 0; i < 4; i++)
-        {
-            list.Add(transform.GetChild(i));
-        }
-        float minDist = float.MaxValue;
-        foreach (Transform child in list)
-        {
-            RaycastHit2D[] hit = Physics2D.RaycastAll(child.position, dir * Vector2.right, Mathf.Infinity);
-            if (hit[1].collider.transform.parent.gameObject.tag == "TetriminoActive")
-            {
-                continue;
-            }
-            if (hit[1])
-            {
-                if (hit[1].distance < minDist)
-                {
-                    minDist = hit[1].distance;
-                }
-            }
-            else
-            {
-                Debug.Log("Did not Hit");
-            }
-        }
-        return minDist;
-    }
-
     void Next() {
         velocity = 0f;
         GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
@@ -191,30 +167,28 @@ public class TetriminoManager : MonoBehaviour {
         {
             int x = RoundWhole(child.position.x);
             int y = RoundWhole(child.position.y);
-            print(x + ", " + y);
+            if (y >= 20) {
+                Die();
+                break;
+            }
             manager.grid[x, y] = child;
             child.transform.position = new Vector3(x, y);
             child.tag = "TetriminoInactive";
         }
         Destroy(copy);
         gameObject.tag = "TetriminoInactive";
-        if (transform.position.y >= 20)
-        {
-            Die();
-        }
         manager.ClearLines();
         manager.GenerateTetrimino();
     }
 
 	void Die() {
-		//manager.Stop();
+		manager.Stop();
 	}
 
 	public void MoveCopy() {
 		copy.transform.rotation = transform.rotation;
         float dist = FloorMeasure();
-        copy.transform.position = new Vector3(transform.position.x, transform.position.y - dist + 0.5f);
-        //copy.transform.position = new Vector3 (transform.position.x, LowestY());
+        copy.transform.position = new Vector3(transform.position.x, RoundHalf(transform.position.y - dist + 0.5f));
 	}
 
 }

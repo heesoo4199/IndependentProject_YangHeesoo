@@ -7,29 +7,38 @@ public class ClassicModeManager : MonoBehaviour {
 
 	public float speed;
 	public float acceleration;
-	public bool isPaused;
-	public int score;
 
 	public GameObject[] tetriminos = new GameObject[7];
-	public Text scoreText;
+	public Transform[,] grid = new Transform[10, 20];
+    public Queue<int> queue = new Queue<int>();
+    public GameObject hold;
 
-    public Transform[,] grid = new Transform[10, 20];
+    public bool isPaused;
+    public int score;
+    public Text scoreText;
 
 	// Use this for initialization
 	void Start () {
+        // Generate first 3 numbers in tetrimino queue
+        for (int i = 0; i < 3; i++) {
+            queue.Enqueue((int)Random.Range(0f, 7f));
+        }
         GenerateTetrimino();
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		speed = (speed + acceleration * Time.deltaTime);
-	}
+    }
 
-	//hi
+    // Instantiates and prepares requested tetrimino.
 	public void GenerateTetrimino() {
-		if (!isPaused) {
-			int chooser = (int)Random.Range (0f, 7f);
-			// Prep tetromino
+        if (!isPaused) {
+            // Tetrimino Queue stuff
+            int chooser = queue.Dequeue();
+            queue.Enqueue((int)Random.Range(0f, 7f));
+            UpdateQueue();
+			// Prep tetrimino
 			GameObject tetrimino = (GameObject) Instantiate (tetriminos [chooser]);
 			TetriminoManager manager = tetrimino.GetComponent<TetriminoManager> ();
 			manager.velocity = speed;
@@ -47,7 +56,7 @@ public class ClassicModeManager : MonoBehaviour {
 			manager.MoveCopy ();
 			// Prep input
 			GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
-			inputManager.GetComponent<InputManager> ().GetNewActiveTetrimino ();
+			inputManager.GetComponent<InputManager>().GetNewActiveTetrimino();
 		}
 		scoreText.text = "Score: " + score;
 	}
@@ -62,7 +71,8 @@ public class ClassicModeManager : MonoBehaviour {
 				count++;
 			}
 		}
-		score += count;
+        score += (int) Mathf.Pow(2, count);
+        UpdateGrid();
 	}
 
 	// 0 is bottom, 19 is top.
@@ -92,6 +102,48 @@ public class ClassicModeManager : MonoBehaviour {
 		ret.RemoveAt (ret.Count - 1);
 		return ret;
 	}
+
+    void UpdateGrid() {
+        Transform[,] g = new Transform[10, 20];
+        foreach (GameObject t in GameObject.FindGameObjectsWithTag("TetriminoInactive")) {
+            int x = Mathf.RoundToInt(t.transform.position.x);
+            int y = Mathf.RoundToInt(t.transform.position.y);
+            if (y >= 20) {
+                Stop();
+                break;
+            }
+            g[x, y] = t.transform;
+        }
+        grid = g;
+    }
+
+    void UpdateQueue() {
+        GameObject q = GameObject.FindWithTag("Queue");
+        int[] arr = queue.ToArray();
+        for (int i = 0; i < 3; i++) {
+            Destroy(q.transform.GetChild(i).gameObject);
+
+            GameObject temp = Instantiate(tetriminos[arr[i]]);
+            temp.tag = "Untagged";
+            temp.transform.parent = q.transform;
+            temp.transform.localPosition = new Vector3(0, -5 * i);
+            Destroy(temp.GetComponent<Rigidbody2D>());
+            Destroy(temp.GetComponent<TetriminoManager>());
+            foreach (Transform t in temp.transform) {
+                Destroy(t.GetComponent<BoxCollider2D>());
+            }
+        }
+    }
+
+    public void Hold() {
+        /*
+        if (hold == null) {
+            GenerateTetrimino();
+        }
+        else {
+            
+        }*/
+    }
 
 	public void Stop() {
 		isPaused = true;
