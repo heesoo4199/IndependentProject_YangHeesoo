@@ -12,6 +12,7 @@ public class ClassicModeManager : MonoBehaviour {
 	public Transform[,] grid = new Transform[10, 20];
     public Queue<int> queue = new Queue<int>();
     public GameObject hold;
+    public bool held; // true if hold was pressed already while current piece is live. Gets reset when next piece is spawned.
 
     public bool isPaused;
     public int score;
@@ -42,24 +43,31 @@ public class ClassicModeManager : MonoBehaviour {
 			GameObject tetrimino = (GameObject) Instantiate (tetriminos [chooser]);
 			TetriminoManager manager = tetrimino.GetComponent<TetriminoManager> ();
 			manager.velocity = speed;
-			// Prep copy
-			GameObject copy = (GameObject) Instantiate (tetriminos [chooser]);
-			copy.tag = "TetriminoCopy";
-			Destroy (copy.GetComponent<Rigidbody2D> ());
-			Destroy (copy.GetComponent<TetriminoManager> ());
-			for (int i = 0; i < 4; i++) {
-				GameObject child = copy.transform.GetChild (i).gameObject;
-				Destroy (child.GetComponent<BoxCollider2D> ());
-				child.GetComponent<SpriteRenderer> ().color = new Color(1f, 1f, 1f, 0.3f);
-			}
-			manager.copy = copy;
-			manager.MoveCopy ();
+            CreateCopy(tetrimino);
 			// Prep input
 			GameObject inputManager = GameObject.FindGameObjectWithTag ("InputManager");
 			inputManager.GetComponent<InputManager>().GetNewActiveTetrimino();
+            held = false;
 		}
 		scoreText.text = "Score: " + score;
 	}
+
+    void CreateCopy(GameObject g) {
+        // Prep copy
+        GameObject copy = (GameObject)Instantiate(g);
+        copy.tag = "TetriminoCopy";
+        Destroy(copy.GetComponent<Rigidbody2D>());
+        Destroy(copy.GetComponent<TetriminoManager>());
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject child = copy.transform.GetChild(i).gameObject;
+            Destroy(child.GetComponent<BoxCollider2D>());
+            child.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0.3f);
+        }
+        TetriminoManager manager = g.GetComponent<TetriminoManager>();
+        manager.copy = copy;
+        manager.MoveCopy();
+    }
 
 	public void ClearLines() {
 		int count = 0;
@@ -135,14 +143,38 @@ public class ClassicModeManager : MonoBehaviour {
         }
     }
 
+    // Hold pos = (-10, 15), default pos = (5, 21.5)
     public void Hold() {
-        /*
-        if (hold == null) {
-            GenerateTetrimino();
+        if (!held) {
+            GameObject active = GameObject.FindGameObjectWithTag("TetriminoActive");
+            if (hold == null) {
+                
+                active.tag = "Hold";
+                active.transform.position = new Vector3(-10, 15);
+                active.GetComponent<TetriminoManager>().velocity = 0;
+                Destroy(active.GetComponent<TetriminoManager>().copy);
+
+                hold = active;
+                GenerateTetrimino();
+            }
+            else {
+                
+                active.tag = "Hold";
+                active.transform.position = new Vector3(-10, 15);
+                active.GetComponent<TetriminoManager>().velocity = 0;
+                Destroy(active.GetComponent<TetriminoManager>().copy);
+
+                hold.tag = "TetriminoActive";
+                hold.transform.position = new Vector3(5, 21.5f);
+                hold.GetComponent<TetriminoManager>().velocity = speed;
+                CreateCopy(hold);
+
+                hold = active;
+                GameObject inputManager = GameObject.FindGameObjectWithTag("InputManager");
+                inputManager.GetComponent<InputManager>().GetNewActiveTetrimino();
+            }
         }
-        else {
-            
-        }*/
+        held = true;
     }
 
 	public void Stop() {
