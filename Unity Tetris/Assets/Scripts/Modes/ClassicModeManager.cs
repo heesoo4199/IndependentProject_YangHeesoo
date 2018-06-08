@@ -134,7 +134,9 @@ public class ClassicModeManager : MonoBehaviour {
             GameObject temp = Instantiate(tetriminos[arr[i]]);
             temp.tag = "Untagged";
             temp.transform.parent = q.transform;
-            temp.transform.localPosition = new Vector3(0, -5 * i);
+            temp.transform.localScale = new Vector3(0.75f, 0.75f);
+            // Ensure preview tetrimino is centered vertically and horizontally. First, find the absolute center of the piece.
+            temp.transform.localPosition = new Vector2(0, -5 * i) - GetTetriminoCenter(temp);
             Destroy(temp.GetComponent<Rigidbody2D>());
             Destroy(temp.GetComponent<TetriminoManager>());
             foreach (Transform t in temp.transform) {
@@ -143,12 +145,27 @@ public class ClassicModeManager : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Returns the local coordinate of the center of the tetrimino. Assumes sub-squares of tetrimino have integer local positions.
+    /// </summary>
+    Vector2 GetTetriminoCenter(GameObject g) {
+        float width, height;
+        IDictionary<int, bool> x = new Dictionary<int, bool>();
+        IDictionary<int, bool> y = new Dictionary<int, bool>();
+        foreach (Transform child in g.transform) {
+            x[Mathf.RoundToInt(child.localPosition.x)] = true;
+            y[Mathf.RoundToInt(child.localPosition.y)] = true;
+        }
+        width = x.Count;
+        height = y.Count;
+        return new Vector2((width - 1) / 2f, (height - 1f) / 2f);
+    }
+
     // Hold pos = (-10, 15), default pos = (5, 21.5)
     public void Hold() {
         if (!held) {
             GameObject active = GameObject.FindGameObjectWithTag("TetriminoActive");
             if (hold == null) {
-                
                 active.tag = "Hold";
                 active.transform.position = new Vector3(-10, 15);
                 active.GetComponent<TetriminoManager>().velocity = 0;
@@ -156,9 +173,7 @@ public class ClassicModeManager : MonoBehaviour {
 
                 hold = active;
                 GenerateTetrimino();
-            }
-            else {
-                
+            } else {
                 active.tag = "Hold";
                 active.transform.position = new Vector3(-10, 15);
                 active.GetComponent<TetriminoManager>().velocity = 0;

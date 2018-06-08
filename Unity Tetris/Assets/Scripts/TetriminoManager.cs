@@ -10,8 +10,7 @@ public class TetriminoManager : MonoBehaviour {
     private ClassicModeManager manager;
 	private float velocity_original;
 
-	private void Awake()
-	{
+	private void Awake() {
         manager = GameObject.FindGameObjectWithTag("ModeManager").GetComponent<ClassicModeManager>();
 	}
 
@@ -26,6 +25,9 @@ public class TetriminoManager : MonoBehaviour {
         RoundX();
 	}
 
+    /// <summary>
+    /// Rotates this tetrimino clockwise 90 degrees.
+    /// </summary>
 	public void Rotate() {
 		transform.Rotate(new Vector3 (0, 0, -90));
         if (Intersects())
@@ -33,6 +35,9 @@ public class TetriminoManager : MonoBehaviour {
 		MoveCopy();
 	}
 
+    /// <summary>
+    /// Moves this tetrimino to the right 1 unit.
+    /// </summary>
 	public void Left() {
         transform.position = new Vector3(transform.position.x - 1f, transform.position.y);
         if (Intersects())
@@ -40,6 +45,9 @@ public class TetriminoManager : MonoBehaviour {
         MoveCopy();
 	}
 
+    /// <summary>
+    /// Moves this tetrimino to the left 1 unit.
+    /// </summary>
 	public void Right() {
         transform.position = new Vector3(transform.position.x + 1f, transform.position.y);
         if (Intersects())
@@ -47,14 +55,23 @@ public class TetriminoManager : MonoBehaviour {
         MoveCopy();
 	}
 
+    /// <summary>
+    /// Triples the rate at which this tetrimino moves downward.
+    /// </summary>
 	public void Accelerate() {
-		velocity = velocity_original * 2f;
+		velocity = velocity_original * 3f;
 	}
 
+    /// <summary>
+    /// Reverts the velocity of the tetrimino to its starting velocity.
+    /// </summary>
 	public void UnAccelerate() {
-		velocity = velocity_original / 2f;
+		velocity = velocity_original;
 	}
 
+    /// <summary>
+    /// Drops this tetrimino to the lowest position possible in the given orientation and horizontal position.
+    /// </summary>
 	public void Drop() {
 		velocity = 0f;
         float dist = FloorMeasure();
@@ -62,12 +79,16 @@ public class TetriminoManager : MonoBehaviour {
         Next();
 	}
 
-	// Somehow there are errors in the position even though I am only moving +- 1, so I round it to the nearest 1.
+	/// <summary>
+    /// Rounds this tetrimino's horizontal position to the nearest integer.
+    /// </summary>
 	void RoundX() {
         transform.position = new Vector3(Mathf.Round (transform.position.x), transform.position.y);
     }
 
-	// returns true if current piece is intersecting the wall or another piece.
+	/// <summary>
+    /// Returns true if current piece is intersecting the wall or another piece.
+    /// </summary>
     bool Intersects() {
         foreach (Transform child in transform) {
             if (child.position.x < -0.5 || child.position.x > 9.5)
@@ -82,7 +103,9 @@ public class TetriminoManager : MonoBehaviour {
         return false;
 	}
 
-    // returns the lowest Y coordinate that this piece can achieve in the current orientation and x position.
+    /// <summary>
+    /// Calculate the lowest Y coordinate that this piece can achieve in the current orientation and x position.
+    /// </summary>
     int LowestY() {
         List<int> x = new List<int>();
         int minY = 0;
@@ -102,19 +125,27 @@ public class TetriminoManager : MonoBehaviour {
         return minY;
     }
 
+    /// <summary>
+    /// Rounds a float to the nearest integer. Returns an int.
+    /// </summary>
     int RoundWhole (float a) {
         return Mathf.RoundToInt(a);
+
     }
 
+    /// <summary>
+    /// Rounds a float to the nearest 0.5f. Returns a float.
+    /// </summary>
 	float RoundHalf(float a) {
         return Mathf.Round(a * 2) / 2f;
 	}
 
+    // If collision is detected and is with an inactive piece or the floor, call Next() to clear lines and resume gameplay.
 	void OnCollisionEnter2D(Collision2D coll) {
 		if (gameObject.tag == "TetriminoActive" && (coll.gameObject.tag == "TetriminoInactive" || coll.gameObject.tag == "Wall")) {
             Next();
 		}
-        // if this piece is inactive and collides with an active piece, then make sure the piece doesnt get pushed in any way.
+        // If this piece is inactive and collides with an active piece, then make sure the piece doesnt get pushed in any way.
         else if (gameObject.tag == "TetriminoInactive") {
             foreach (Transform child in transform) {
                 child.position = new Vector3(RoundWhole(child.position.x), RoundWhole(child.position.y));
@@ -122,14 +153,16 @@ public class TetriminoManager : MonoBehaviour {
         }
 	}
 
-    // ceiling contact estop
+    // If piece contacts ceiling, game over.
 	void OnTriggerEnter2D(Collider2D coll) {
 		if (coll.gameObject.tag == "Wall") {
 			Die ();
 		}
 	}
 
-    // returns smallest distance from the current piece to the floor.
+    /// <summary>
+    /// Returns smallest distance from the current piece to the floor.
+    /// </summary>
     float FloorMeasure()
     {
         List<Transform> list = new List<Transform>();
@@ -160,6 +193,9 @@ public class TetriminoManager : MonoBehaviour {
         return minDist;
     }
 
+    /// <summary>
+    /// Clears the line, makes this tetrimino inactive, and generate the next tetrimino.
+    /// </summary>
     void Next() {
         velocity = 0f;
         GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
@@ -181,10 +217,16 @@ public class TetriminoManager : MonoBehaviour {
         manager.GenerateTetrimino();
     }
 
+    /// <summary>
+    /// Ends the current game.
+    /// </summary>
 	void Die() {
 		manager.Stop();
 	}
 
+    /// <summary>
+    /// Update the location of the preview copy.
+    /// </summary>
 	public void MoveCopy() {
 		copy.transform.rotation = transform.rotation;
         float dist = FloorMeasure();
