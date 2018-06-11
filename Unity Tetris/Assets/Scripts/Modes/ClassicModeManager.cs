@@ -58,8 +58,7 @@ public class ClassicModeManager : MonoBehaviour {
         copy.tag = "TetriminoCopy";
         Destroy(copy.GetComponent<Rigidbody2D>());
         Destroy(copy.GetComponent<TetriminoManager>());
-        for (int i = 0; i < 4; i++)
-        {
+        for (int i = 0; i < 4; i++) {
             GameObject child = copy.transform.GetChild(i).gameObject;
             Destroy(child.GetComponent<BoxCollider2D>());
             child.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0.3f);
@@ -98,7 +97,6 @@ public class ClassicModeManager : MonoBehaviour {
 		}
 	}
 
-	//
 	List<Transform> GetLine(int row) {
 		Transform child = transform.GetChild (row);
 		RaycastHit2D[] hit = Physics2D.RaycastAll (child.position, Vector2.right, Mathf.Infinity);
@@ -134,9 +132,11 @@ public class ClassicModeManager : MonoBehaviour {
             GameObject temp = Instantiate(tetriminos[arr[i]]);
             temp.tag = "Untagged";
             temp.transform.parent = q.transform;
-            temp.transform.localScale = new Vector3(0.75f, 0.75f);
+            temp.transform.localScale = new Vector3(.75f, .75f);
             // Ensure preview tetrimino is centered vertically and horizontally. First, find the absolute center of the piece.
-            temp.transform.localPosition = new Vector2(0, -5 * i) - GetTetriminoCenter(temp);
+            temp.transform.position = new Vector2(13f, 18f -(5 * i));
+            //GetTetriminoCenter(temp);
+            temp.transform.Translate(-GetTetriminoCenterDelta(temp));
             Destroy(temp.GetComponent<Rigidbody2D>());
             Destroy(temp.GetComponent<TetriminoManager>());
             foreach (Transform t in temp.transform) {
@@ -146,19 +146,30 @@ public class ClassicModeManager : MonoBehaviour {
     }
 
     /// <summary>
-    /// Returns the local coordinate of the center of the tetrimino. Assumes sub-squares of tetrimino have integer local positions.
+    /// Gets the positional difference to the center of the given tetrimino
     /// </summary>
-    Vector2 GetTetriminoCenter(GameObject g) {
-        float width, height;
-        IDictionary<int, bool> x = new Dictionary<int, bool>();
-        IDictionary<int, bool> y = new Dictionary<int, bool>();
+    Vector2 GetTetriminoCenterDelta(GameObject g) {
+        Transform a = g.transform.GetChild(0);
+        float minX = a.position.x;
+        float minY = a.position.y;
+        float maxX = minX;
+        float maxY = minY;
         foreach (Transform child in g.transform) {
-            x[Mathf.RoundToInt(child.localPosition.x)] = true;
-            y[Mathf.RoundToInt(child.localPosition.y)] = true;
+            if (child.position.x < minX) {
+                minX = child.position.x;
+            }
+            if (child.position.y < minY) {
+                minY = child.position.y;
+            }
+            if (child.position.x > maxX) {
+                maxX = child.position.x;
+            }
+            if (child.position.y > maxY) {
+                maxY = child.position.y;
+            }
         }
-        width = x.Count;
-        height = y.Count;
-        return new Vector2((width - 1) / 2f, (height - 1f) / 2f);
+        Vector3 center = new Vector3((minX + maxX) / 2f, (minY + maxY) / 2f);
+        return center - g.transform.position;
     }
 
     // Hold pos = (-10, 15), default pos = (5, 21.5)
