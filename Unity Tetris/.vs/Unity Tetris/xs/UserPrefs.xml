@@ -1,9 +1,9 @@
 ﻿<Properties StartupConfiguration="{379D9076-0D84-36CA-DB4F-F003972A64A5}|">
   <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="Unity.Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scenes/Title/TitleSceneManager.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/TetriminoManager.cs">
     <Files>
       <File FileName="Assets/Scripts/Modes/ClassicModeManager.cs" Line="91" Column="32" />
-      <File FileName="Assets/Scripts/TetriminoManager.cs" Line="16" Column="5" />
+      <File FileName="Assets/Scripts/TetriminoManager.cs" Line="36" Column="3" />
       <File FileName="Assets/Scripts/InputManager.cs" Line="26" Column="42" />
       <File FileName="Assets/Scenes/Title/TitleSceneManager.cs" Line="20" Column="3" />
       <File FileName="Assets/Scripts/Grid.cs" Line="1" Column="1" />
