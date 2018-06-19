@@ -13,4 +13,10 @@ public class MainSceneManager : MonoBehaviour {
 	void Update () {
 		
 	}
+
+	public void Exit()
+	{
+        Gamestrap.GSAppExampleControl.Instance.LoadScene(Gamestrap.ESceneNames.Title);
+	}
+
 }

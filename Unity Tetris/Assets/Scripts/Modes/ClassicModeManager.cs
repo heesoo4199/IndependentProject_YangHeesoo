@@ -15,8 +15,13 @@ public class ClassicModeManager : MonoBehaviour {
     public bool held; // true if hold was pressed already while current piece is live. Gets reset when next piece is spawned.
 
     public bool isPaused;
+    public GameObject deathPanel;
+
     public int score;
+    public int lines;
     public Text scoreText;
+    public Text linesText;
+    public Text difficultyText;
 
 	// Use this for initialization
 	void Start () {
@@ -49,7 +54,9 @@ public class ClassicModeManager : MonoBehaviour {
 			inputManager.GetComponent<InputManager>().GetNewActiveTetrimino();
             held = false;
 		}
-		scoreText.text = "Score: " + score;
+		scoreText.text = "Score\n" + score;
+        linesText.text = "Lines\n" + lines;
+        difficultyText.text = "Difficulty\n" + (int) (speed - 3);
 	}
 
     void CreateCopy(GameObject g) {
@@ -79,6 +86,7 @@ public class ClassicModeManager : MonoBehaviour {
 			}
 		}
         score += (int) Mathf.Pow(2, count);
+        lines += count;
         UpdateGrid();
 	}
 
@@ -134,7 +142,7 @@ public class ClassicModeManager : MonoBehaviour {
             temp.transform.parent = q.transform;
             temp.transform.localScale = new Vector3(.75f, .75f);
             // Ensure preview tetrimino is centered vertically and horizontally. First, find the absolute center of the piece.
-            temp.transform.position = new Vector2(13f, 18f -(5 * i));
+            temp.transform.position = new Vector2(13f, 16f -(5 * i));
             //GetTetriminoCenter(temp);
             temp.transform.Translate(-GetTetriminoCenterDelta(temp));
             Destroy(temp.GetComponent<Rigidbody2D>());
@@ -178,7 +186,8 @@ public class ClassicModeManager : MonoBehaviour {
             GameObject active = GameObject.FindGameObjectWithTag("TetriminoActive");
             if (hold == null) {
                 active.tag = "Hold";
-                active.transform.position = new Vector3(-10, 15);
+                active.transform.position = new Vector3(-4f, 15f);
+                active.transform.Translate(-GetTetriminoCenterDelta(active));
                 active.GetComponent<TetriminoManager>().velocity = 0;
                 Destroy(active.GetComponent<TetriminoManager>().copy);
 
@@ -186,7 +195,8 @@ public class ClassicModeManager : MonoBehaviour {
                 GenerateTetrimino();
             } else {
                 active.tag = "Hold";
-                active.transform.position = new Vector3(-10, 15);
+                active.transform.position = new Vector3(-4f, 15f);
+                active.transform.Translate(-GetTetriminoCenterDelta(active));
                 active.GetComponent<TetriminoManager>().velocity = 0;
                 Destroy(active.GetComponent<TetriminoManager>().copy);
 
@@ -205,6 +215,10 @@ public class ClassicModeManager : MonoBehaviour {
 
 	public void Stop() {
 		isPaused = true;
+        if (PlayerPrefs.GetInt("score") < score) {
+            PlayerPrefs.SetInt("score", score);
+        }
+        deathPanel.GetComponent<Animator>().SetBool("Visible", true);
 	}
 
 }

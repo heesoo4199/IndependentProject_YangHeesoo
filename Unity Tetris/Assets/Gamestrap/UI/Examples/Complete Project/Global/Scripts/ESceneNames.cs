@@ -7,8 +7,8 @@ namespace Gamestrap
     /// </summary>
     public enum ESceneNames
     {
-        MainMenu,
+        Main,
         Levels,
-        Gameplay
+        Title
     }
 }

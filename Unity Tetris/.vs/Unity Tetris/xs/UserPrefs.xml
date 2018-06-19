@@ -1,12 +1,16 @@
 ﻿<Properties StartupConfiguration="{379D9076-0D84-36CA-DB4F-F003972A64A5}|">
   <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="Unity.Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/TetriminoManager.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scenes/Main/MainSceneManager.cs">
     <Files>
-      <File FileName="Assets/Scripts/Modes/ClassicModeManager.cs" Line="91" Column="32" />
-      <File FileName="Assets/Scripts/TetriminoManager.cs" Line="36" Column="3" />
+      <File FileName="Assets/Scripts/Modes/ClassicModeManager.cs" Line="219" Column="3" />
+      <File FileName="Assets/Scripts/TetriminoManager.cs" Line="211" Column="13" />
       <File FileName="Assets/Scripts/InputManager.cs" Line="26" Column="42" />
-      <File FileName="Assets/Scenes/Title/TitleSceneManager.cs" Line="20" Column="3" />
+      <File FileName="Assets/Scenes/Title/TitleSceneManager.cs" Line="19" Column="9" />
       <File FileName="Assets/Scripts/Grid.cs" Line="1" Column="1" />
+      <File FileName="Assets/Gamestrap/UI/Examples/Complete Project/Screens/Main Menu/MainMenuControl.cs" Line="31" Column="70" />
+      <File FileName="Assets/Gamestrap/UI/Examples/Complete Project/Global/Scripts/ESceneNames.cs" Line="12" Column="14" />
+      <File FileName="Assets/Gamestrap/UI/Examples/Complete Project/Global/Scripts/SceneTransitionsButton.cs" Line="24" Column="1" />
+      <File FileName="Assets/Scenes/Main/MainSceneManager.cs" Line="17" Column="16" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
